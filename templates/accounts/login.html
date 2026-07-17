@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Вход | CRM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-sm-8 col-md-5 col-lg-4">
+        <div class="bg-white border rounded-2 p-4 shadow-sm">
+            <h1 class="h4 mb-3">Вход в CRM</h1>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {{ form.next }}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <div class="mb-3">
+                    <label class="form-label" for="{{ form.user.id_for_label }}">Пользователь</label>
+                    {{ form.user }}
+                    {% for error in form.user.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% empty %}
+                        <div class="form-text">Выберите пользователя из списка.</div>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Войти</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

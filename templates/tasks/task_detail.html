@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{{ task.title }} | CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div>
+        <h1 class="h3 mb-1">{{ task.title }}</h1>
+        <div class="text-muted">Карточка задачи</div>
+    </div>
+    {% if can_edit %}
+        <div class="d-flex flex-wrap gap-2">
+            {% if task.status != "COMPLETED" and task.status != "CANCELLED" %}
+                <form method="post" action="{% url 'tasks:complete' task.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-success">Выполнена</button>
+                </form>
+            {% endif %}
+            {% if task.attachments.all %}
+                <a href="{% url 'tasks:download_attachments' task.pk %}" class="btn btn-outline-secondary">Скачать все файлы</a>
+            {% endif %}
+            <a href="{% url 'tasks:edit' task.pk %}" class="btn btn-primary">Редактировать</a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-8">
+        <div class="bg-white border rounded-2 p-3">
+            <h2 class="h5">Описание</h2>
+            <div class="text-break">{{ task.description|linebreaksbr|default:"Описание не указано" }}</div>
+        </div>
+        <div class="bg-white border rounded-2 p-3 mt-3">
+            <h2 class="h5">Файлы</h2>
+            {% if task.attachments.all %}
+                <ul class="list-group">
+                    {% for attachment in task.attachments.all %}
+                        <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <a href="{{ attachment.file.url }}" target="_blank" rel="noopener">{{ attachment.original_name }}</a>
+                            <span class="text-muted small">
+                                {{ attachment.uploaded_by.get_full_name|default:attachment.uploaded_by.username }},
+                                {{ attachment.uploaded_at|date:"d.m.Y H:i" }}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="text-muted">Файлы не прикреплены</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="bg-white border rounded-2 p-3">
+            <dl class="row mb-0">
+                <dt class="col-5">Приоритет</dt>
+                <dd class="col-7">{{ task.get_priority_display }}</dd>
+                <dt class="col-5">Исполнитель</dt>
+                <dd class="col-7">{{ task.assignee.get_full_name|default:task.assignee.username }}</dd>
+                <dt class="col-5">Срок исполнения</dt>
+                <dd class="col-7">{{ task.due_at|date:"d.m.Y"|default:"-" }}</dd>
+                <dt class="col-5">Дата начала</dt>
+                <dd class="col-7">{{ task.created_at|date:"d.m.Y" }}</dd>
+                <dt class="col-5">Обновлена</dt>
+                <dd class="col-7">{{ task.updated_at|date:"d.m.Y H:i" }}</dd>
+                <dt class="col-5">Выполнена</dt>
+                <dd class="col-7">{{ task.completed_at|date:"d.m.Y H:i"|default:"-" }}</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+{% endblock %}

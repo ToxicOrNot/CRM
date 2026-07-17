@@ -1,0 +1,93 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}CRM{% endblock %}</title>
+    <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <style>
+        .task-completion-notice {
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        .task-completion-notice.is-fading {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body class="bg-light">
+{% if user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">CRM</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Переключить навигацию">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'tasks:list' %}">Все задачи</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'tasks:my' %}">Мои задачи</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'tasks:archive' %}">Архив</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'tasks:create' %}">Создать задачу</a></li>
+                    {% if user.is_staff %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'admin:index' %}">Администрирование</a></li>
+                    {% endif %}
+                </ul>
+                <form method="post" action="{% url 'logout' %}" class="d-flex">
+                    {% csrf_token %}
+                    <span class="navbar-text me-3">{{ user.get_full_name|default:user.username }}</span>
+                    <button type="submit" class="btn btn-outline-light btn-sm">Выйти</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+{% endif %}
+
+<main class="container py-4">
+    {% if task_completion_notice %}
+        <div
+            class="position-fixed top-0 start-50 translate-middle-x p-3 task-completion-notice"
+            data-autohide-ms="5000"
+            data-fade-ms="500"
+            style="z-index: 1080; width: min(720px, 100%);"
+        >
+            <div class="alert alert-success shadow d-flex flex-wrap justify-content-between align-items-center gap-3 mb-0" role="alert">
+                <div>
+                    Задача «{{ task_completion_notice.title }}» отмечена выполненной.
+                </div>
+                <form method="post" action="{% url 'tasks:undo_complete' task_completion_notice.task_id %}" class="m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-danger btn-sm">Отменить</button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script>
+    document.querySelectorAll(".task-completion-notice").forEach((notice) => {
+        const autohideMs = Number(notice.dataset.autohideMs || 5000);
+        const fadeMs = Number(notice.dataset.fadeMs || 500);
+        window.setTimeout(() => {
+            notice.classList.add("is-fading");
+            window.setTimeout(() => notice.remove(), fadeMs);
+        }, autohideMs);
+    });
+</script>
+</body>
+</html>
