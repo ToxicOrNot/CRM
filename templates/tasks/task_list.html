@@ -144,6 +144,14 @@
                                         <dd class="col-7">{{ task.get_priority_display }}</dd>
                                         <dt class="col-5">Исполнитель</dt>
                                         <dd class="col-7">{{ task.assignee.get_full_name|default:task.assignee.username }}</dd>
+                                        <dt class="col-5">Заказ</dt>
+                                        <dd class="col-7">
+                                            {% if task.order %}
+                                                <a href="{% url 'orders:detail' task.order.pk %}">{{ task.order }}</a>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </dd>
                                         <dt class="col-5">Срок исполнения</dt>
                                         <dd class="col-7">{{ task.due_at|date:"d.m.Y"|default:"-" }}</dd>
                                         <dt class="col-5">Дата начала</dt>

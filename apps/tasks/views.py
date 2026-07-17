@@ -71,7 +71,7 @@ class TaskListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = (
-            Task.objects.select_related("creator", "assignee")
+            Task.objects.select_related("creator", "assignee", "order")
             .prefetch_related("attachments", "attachments__uploaded_by")
             .filter(archived=False)
             .order_by("-created_at")
@@ -185,7 +185,7 @@ class ArchiveTaskListView(TaskListView):
 
     def get_queryset(self):
         queryset = (
-            Task.objects.select_related("creator", "assignee")
+            Task.objects.select_related("creator", "assignee", "order")
             .prefetch_related("attachments", "attachments__uploaded_by")
             .filter(archived=True)
             .order_by("-updated_at")
@@ -207,7 +207,7 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
     context_object_name = "task"
 
     def get_queryset(self):
-        return Task.objects.select_related("creator", "assignee").prefetch_related(
+        return Task.objects.select_related("creator", "assignee", "order").prefetch_related(
             "attachments",
             "attachments__uploaded_by",
         )
@@ -223,6 +223,18 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
     form_class = TaskForm
     template_name = "tasks/task_form.html"
     success_url = reverse_lazy("tasks:list")
+
+    def get_initial(self) -> dict[str, object]:
+        initial = super().get_initial()
+        order_id = self.request.GET.get("order")
+        if order_id:
+            initial["order"] = order_id
+        return initial
+
+    def get_success_url(self) -> str:
+        if self.object.order_id:
+            return reverse("orders:detail", kwargs={"pk": self.object.order_id})
+        return str(self.success_url)
 
     def form_valid(self, form: TaskForm):
         form.instance.creator = self.request.user
@@ -248,7 +260,7 @@ class TaskUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     template_name = "tasks/task_form.html"
 
     def get_queryset(self):
-        return Task.objects.select_related("creator", "assignee").prefetch_related(
+        return Task.objects.select_related("creator", "assignee", "order").prefetch_related(
             "attachments",
             "attachments__uploaded_by",
         )

@@ -23,6 +23,7 @@ class TaskForm(forms.ModelForm):
             "title",
             "description",
             "assignee",
+            "order",
             "priority",
             "due_at",
             "archived",
@@ -31,6 +32,7 @@ class TaskForm(forms.ModelForm):
             "title": "Название",
             "description": "Описание",
             "assignee": "Исполнитель",
+            "order": "Заказ",
             "priority": "Приоритет",
             "archived": "Архивная задача",
         }
@@ -52,6 +54,11 @@ class TaskForm(forms.ModelForm):
                 widget.attrs.setdefault("class", "form-control")
             if name == "assignee":
                 field.queryset = field.queryset.order_by("last_name", "first_name", "username")
+            if name == "order":
+                field.queryset = field.queryset.filter(archived=False).order_by(
+                    "-order_date",
+                    "-created_at",
+                )
 
     def clean_due_at(self):
         due_date = self.cleaned_data["due_at"]

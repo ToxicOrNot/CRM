@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} | CRM{% endblock %}
+{% block main_container_class %}container-fluid py-4 px-4 px-xl-5{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div>
+        <h1 class="h3 mb-1">{{ page_title }}</h1>
+        {% if is_archive_view %}
+            <div class="text-muted">Архивные заказы не показываются в основном списке</div>
+        {% endif %}
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        {% if is_archive_view %}
+            <a href="{% url 'orders:list' %}" class="btn btn-outline-secondary">Активные заказы</a>
+        {% else %}
+            <a href="{% url 'orders:archive' %}" class="btn btn-outline-secondary">Архив</a>
+            {% if perms.orders.add_order %}
+                <a href="{% url 'orders:create' %}" class="btn btn-primary">Создать заказ</a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<form method="get" class="bg-white border rounded-2 p-3 mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-12 col-lg-4">
+            <label class="form-label" for="q">Поиск</label>
+            <input class="form-control" type="search" name="q" id="q" value="{{ filters.q }}" placeholder="Номер, контакты, работа, комментарий">
+        </div>
+        <div class="col-12 col-md-4 col-lg-2">
+            <label class="form-label" for="status">Статус</label>
+            <select class="form-select" name="status" id="status">
+                <option value="">Все статусы</option>
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-md-4 col-lg-2">
+            <label class="form-label" for="order_date">Дата заказа</label>
+            <input class="form-control" type="date" name="order_date" id="order_date" value="{{ filters.order_date }}">
+        </div>
+        <div class="col-12 col-md-4 col-lg-2">
+            <label class="form-label" for="delivery_date">Дата выдачи</label>
+            <input class="form-control" type="date" name="delivery_date" id="delivery_date" value="{{ filters.delivery_date }}">
+        </div>
+        <div class="col-12 col-lg-2 d-grid">
+            <button type="submit" class="btn btn-outline-primary">Применить</button>
+        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-3 mt-3">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="1" name="overdue" id="overdue" {% if filters.overdue %}checked{% endif %}>
+            <label class="form-check-label" for="overdue">Только просроченные</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="1" name="paid" id="paid" {% if filters.paid %}checked{% endif %}>
+            <label class="form-check-label" for="paid">Полностью оплаченные</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="1" name="unpaid" id="unpaid" {% if filters.unpaid %}checked{% endif %}>
+            <label class="form-check-label" for="unpaid">С остатком к оплате</label>
+        </div>
+    </div>
+</form>
+
+<style>
+    .orders-table {
+        table-layout: fixed;
+    }
+
+    .orders-table > thead th,
+    .orders-table > tbody > tr.order-summary-row > td {
+        padding-left: 0.4rem;
+        padding-right: 0.4rem;
+        white-space: nowrap;
+    }
+
+    .orders-table > thead th:first-child,
+    .orders-table > tbody > tr.order-summary-row > td:first-child {
+        padding-left: 0.65rem;
+    }
+
+    .orders-table > thead th:last-child,
+    .orders-table > tbody > tr.order-summary-row > td:last-child {
+        padding-right: 0.65rem;
+    }
+
+    .orders-table .order-work-cell {
+        padding-right: 0.2rem;
+    }
+
+    .orders-table .order-contacts-cell {
+        padding-left: 0.2rem;
+        padding-right: 0.2rem;
+    }
+
+    .orders-table .order-money-cell {
+        padding-left: 0.2rem;
+    }
+
+    .orders-table .order-work-text,
+    .orders-table .order-contacts-text {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .orders-table tbody tr.order-summary-row.order-row-in-progress > td {
+        background-color: #f1f3f5;
+    }
+
+    .orders-table tbody tr.order-summary-row.order-row-waiting > td {
+        background-color: #fff3cd;
+    }
+
+    .orders-table tbody tr.order-summary-row.order-row-ready > td {
+        background-color: #d8f3ff;
+    }
+
+    .orders-table tbody tr.order-summary-row.order-row-delivered > td {
+        background-color: #d1e7dd;
+    }
+
+    .orders-table tbody tr.order-summary-row.order-row-cancelled > td {
+        background-color: #6c757d;
+        color: #fff;
+    }
+</style>
+
+<div class="table-responsive bg-white border rounded-2">
+    <table class="table table-hover align-middle mb-0 orders-table">
+        <colgroup>
+            <col style="width: 4%;">
+            <col style="width: 7%;">
+            <col style="width: 9%;">
+            <col style="width: 7%;">
+            <col style="width: 9%;">
+            <col style="width: 31%;">
+            <col style="width: 17%;">
+            <col style="width: 4%;">
+            <col style="width: 4%;">
+            <col style="width: 4%;">
+            <col style="width: 4%;">
+        </colgroup>
+        <thead class="table-light">
+            <tr>
+                <th>№</th>
+                <th>
+                    <a href="{{ sort_links.order_date.url }}" class="text-decoration-none text-dark">
+                        {{ sort_links.order_date.label }} {{ sort_links.order_date.indicator }}
+                    </a>
+                </th>
+                <th>Статус</th>
+                <th>
+                    <a href="{{ sort_links.delivery_date.url }}" class="text-decoration-none text-dark">
+                        {{ sort_links.delivery_date.label }} {{ sort_links.delivery_date.indicator }}
+                    </a>
+                </th>
+                <th>Номер</th>
+                <th>Информация о работе</th>
+                <th>Контакты</th>
+                <th class="text-end">
+                    <a href="{{ sort_links.total_amount.url }}" class="text-decoration-none text-dark">
+                        {{ sort_links.total_amount.label }} {{ sort_links.total_amount.indicator }}
+                    </a>
+                </th>
+                <th class="text-end">Аванс</th>
+                <th class="text-end">Доплата</th>
+                <th class="text-end">
+                    <a href="{{ sort_links.balance.url }}" class="text-decoration-none text-dark">
+                        {{ sort_links.balance.label }} {{ sort_links.balance.indicator }}
+                    </a>
+                </th>
+            </tr>
+        </thead>
+        <tbody id="orders-table-body">
+        {% for order in orders %}
+            <tr
+                class="order-summary-row {{ order.status_row_class }}"
+                role="button"
+                tabindex="0"
+                data-bs-toggle="collapse"
+                data-bs-target="#order-details-{{ order.pk }}"
+                aria-expanded="false"
+                aria-controls="order-details-{{ order.pk }}"
+                style="cursor: pointer;"
+            >
+                <td class="fw-semibold">{{ order.sequence_number }}</td>
+                <td>{{ order.order_date|date:"d.m.Y" }}</td>
+                <td>
+                    {{ order.get_status_display }}
+                    {% if order.is_paid %}
+                        <span class="badge text-bg-success ms-1">Оплачено</span>
+                    {% endif %}
+                    {% if order.is_overdue %}
+                        <span class="badge text-bg-danger ms-1">Просрочен</span>
+                    {% endif %}
+                </td>
+                <td>{{ order.delivery_date|date:"d.m.Y" }}</td>
+                <td class="fw-semibold">{{ order.display_number }}</td>
+                <td class="order-work-cell">
+                    <span class="d-inline-block text-truncate order-work-text">{{ order.work_information }}</span>
+                </td>
+                <td class="order-contacts-cell">
+                    <span class="d-inline-block text-truncate order-contacts-text">{{ order.contacts }}</span>
+                </td>
+                <td class="text-end order-money-cell">{{ order.total_amount|floatformat:2 }}</td>
+                <td class="text-end order-money-cell">{{ order.advance_amount|floatformat:2 }}</td>
+                <td class="text-end order-money-cell">{{ order.additional_payment|floatformat:2 }}</td>
+                <td class="text-end fw-semibold order-money-cell">{{ order.balance|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td colspan="11" class="p-0 border-0">
+                    <div
+                        class="collapse"
+                        id="order-details-{{ order.pk }}"
+                        data-bs-parent="#orders-table-body"
+                    >
+                        <div class="border-top bg-light p-3">
+                            <div class="row g-3">
+                                <div class="col-12 col-xl-7">
+                                    <div class="bg-white border rounded-2 p-3 h-100">
+                                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                                            <div>
+                                                <div class="text-muted small">Заказ</div>
+                                                <div class="h5 mb-0">{{ order.display_number }}</div>
+                                            </div>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <a href="{{ order.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">Карточка</a>
+                                                <a href="{% url 'tasks:create' %}?order={{ order.pk }}" class="btn btn-sm btn-outline-primary">Создать задачу</a>
+                                                {% if perms.orders.change_order %}
+                                                    <a href="{% url 'orders:edit' order.pk %}" class="btn btn-sm btn-primary">Редактировать</a>
+                                                    {% if order.archived %}
+                                                        <form method="post" action="{% url 'orders:restore' order.pk %}">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                                            <button type="submit" class="btn btn-sm btn-outline-success">Восстановить</button>
+                                                        </form>
+                                                    {% else %}
+                                                        <a href="{% url 'orders:archive_item' order.pk %}" class="btn btn-sm btn-outline-danger">Архивировать</a>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-3">
+                                            <div class="col-12 col-lg-6">
+                                                <div class="text-muted small mb-1">Информация о работе</div>
+                                                <div class="text-break">{{ order.work_information|linebreaksbr }}</div>
+                                            </div>
+                                            <div class="col-12 col-lg-6">
+                                                <div class="text-muted small mb-1">Контакты</div>
+                                                <div class="text-break">{{ order.contacts|linebreaksbr }}</div>
+                                            </div>
+                                            <div class="col-12">
+                                                <div class="text-muted small mb-1">Комментарий</div>
+                                                <div class="text-break">{{ order.comment|linebreaksbr|default:"Комментарий не указан" }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-xl-5">
+                                    <div class="bg-white border rounded-2 p-3 mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h2 class="h6 mb-0">Быстрое обновление</h2>
+                                            {% if order.is_paid %}
+                                                <span class="badge text-bg-success">Оплачено</span>
+                                            {% else %}
+                                                <span class="badge text-bg-light text-dark border">Остаток {{ order.balance|floatformat:2 }}</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if perms.orders.change_order %}
+                                            <form method="post" action="{% url 'orders:quick_update' order.pk %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                                <div class="row g-2">
+                                                    <div class="col-12">
+                                                        <label class="form-label small" for="{{ order.quick_update_form.status.id_for_label }}">Статус</label>
+                                                        {{ order.quick_update_form.status }}
+                                                    </div>
+                                                    <div class="col-12 col-md-4">
+                                                        <label class="form-label small" for="{{ order.quick_update_form.total_amount.id_for_label }}">Сумма</label>
+                                                        {{ order.quick_update_form.total_amount }}
+                                                    </div>
+                                                    <div class="col-12 col-md-4">
+                                                        <label class="form-label small" for="{{ order.quick_update_form.advance_amount.id_for_label }}">Аванс</label>
+                                                        {{ order.quick_update_form.advance_amount }}
+                                                    </div>
+                                                    <div class="col-12 col-md-4">
+                                                        <label class="form-label small" for="{{ order.quick_update_form.additional_payment.id_for_label }}">Доплата</label>
+                                                        {{ order.quick_update_form.additional_payment }}
+                                                    </div>
+                                                    <div class="col-12 d-flex justify-content-end">
+                                                        <button type="submit" class="btn btn-sm btn-success">Сохранить</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        {% else %}
+                                            <div class="text-muted small">Нет права на изменение заказа.</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="bg-white border rounded-2 p-3 mb-3">
+                                        <h2 class="h6">Связанные задачи</h2>
+                                        {% if order.tasks.all %}
+                                            <ul class="list-unstyled mb-0">
+                                                {% for task in order.tasks.all %}
+                                                    <li class="mb-2">
+                                                        <a href="{{ task.get_absolute_url }}" class="fw-semibold">{{ task.title }}</a>
+                                                        <div class="small text-muted">
+                                                            {{ task.assignee.get_full_name|default:task.assignee.username }},
+                                                            срок: {{ task.due_at|date:"d.m.Y"|default:"-" }}
+                                                        </div>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <div class="text-muted small">Связанных задач нет</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="bg-white border rounded-2 p-3">
+                                        <dl class="row small mb-0">
+                                            <dt class="col-5">Создал</dt>
+                                            <dd class="col-7">{{ order.created_by.get_full_name|default:order.created_by.username }}</dd>
+                                            <dt class="col-5">Создан</dt>
+                                            <dd class="col-7">{{ order.created_at|date:"d.m.Y H:i" }}</dd>
+                                            <dt class="col-5">Изменён</dt>
+                                            <dd class="col-7">{{ order.updated_at|date:"d.m.Y H:i" }}</dd>
+                                            <dt class="col-5">Архив</dt>
+                                            <dd class="col-7">{{ order.archived|yesno:"Да,Нет" }}</dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="11" class="text-center text-muted py-4">Заказы не найдены</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if is_paginated %}
+    <nav class="mt-3" aria-label="Пагинация">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Назад</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперёд</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+{% endif %}
+
+<script>
+    document.querySelectorAll(".order-summary-row").forEach((row) => {
+        row.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                row.click();
+            }
+        });
+    });
+</script>
+{% endblock %}

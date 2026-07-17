@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}{{ order }} | CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div>
+        <h1 class="h3 mb-1">{{ order }}</h1>
+        <div class="text-muted">Карточка заказа</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'orders:list' %}" class="btn btn-outline-secondary">К списку</a>
+        <a href="{% url 'tasks:create' %}?order={{ order.pk }}" class="btn btn-outline-primary">Создать задачу для заказа</a>
+        {% if perms.orders.change_order %}
+            <a href="{% url 'orders:edit' order.pk %}" class="btn btn-primary">Редактировать</a>
+            {% if order.archived %}
+                <form method="post" action="{% url 'orders:restore' order.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-outline-success">Восстановить</button>
+                </form>
+            {% else %}
+                <a href="{% url 'orders:archive_item' order.pk %}" class="btn btn-outline-danger">Архивировать</a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-xl-8">
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <h2 class="h5">Основная информация</h2>
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Дата заказа</dt>
+                <dd class="col-sm-8">{{ order.order_date|date:"d.m.Y" }}</dd>
+                <dt class="col-sm-4">Дата выдачи</dt>
+                <dd class="col-sm-8">{{ order.delivery_date|date:"d.m.Y" }}</dd>
+                <dt class="col-sm-4">Статус</dt>
+                <dd class="col-sm-8">{{ order.get_status_display }}</dd>
+                <dt class="col-sm-4">Номер заказа</dt>
+                <dd class="col-sm-8">{{ order.display_number }}</dd>
+            </dl>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <h2 class="h5">Информация о работе</h2>
+            <div class="text-break">{{ order.work_information|linebreaksbr }}</div>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <h2 class="h5">Контакты</h2>
+            <div class="text-break">{{ order.contacts|linebreaksbr }}</div>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <h2 class="h5">Комментарий</h2>
+            <div class="text-break">{{ order.comment|linebreaksbr|default:"Комментарий не указан" }}</div>
+        </section>
+    </div>
+
+    <div class="col-12 col-xl-4">
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <h2 class="h5">Финансы</h2>
+            <dl class="row mb-0">
+                <dt class="col-6">Сумма к оплате</dt>
+                <dd class="col-6 text-end">{{ order.total_amount|floatformat:2 }}</dd>
+                <dt class="col-6">Аванс</dt>
+                <dd class="col-6 text-end">{{ order.advance_amount|floatformat:2 }}</dd>
+                <dt class="col-6">Доплата</dt>
+                <dd class="col-6 text-end">{{ order.additional_payment|floatformat:2 }}</dd>
+                <dt class="col-6">Остаток</dt>
+                <dd class="col-6 text-end fw-semibold">{{ order.balance|floatformat:2 }}</dd>
+                <dt class="col-6">Оплата</dt>
+                <dd class="col-6 text-end">
+                    {% if order.is_paid %}
+                        <span class="badge text-bg-success">Оплачен</span>
+                    {% else %}
+                        <span class="badge text-bg-light text-dark border">Есть остаток</span>
+                    {% endif %}
+                </dd>
+            </dl>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <h2 class="h5">Связанные задачи</h2>
+            {% if order.tasks.all %}
+                <div class="list-group list-group-flush">
+                    {% for task in order.tasks.all %}
+                        <a href="{{ task.get_absolute_url }}" class="list-group-item list-group-item-action px-0">
+                            <div class="fw-semibold">{{ task.title }}</div>
+                            <div class="small text-muted">
+                                {{ task.assignee.get_full_name|default:task.assignee.username }},
+                                срок: {{ task.due_at|date:"d.m.Y"|default:"-" }}
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-muted">Связанных задач нет</div>
+            {% endif %}
+        </section>
+
+        <section class="bg-white border rounded-2 p-3">
+            <h2 class="h5">Служебная информация</h2>
+            <dl class="row mb-0">
+                <dt class="col-5">Создал</dt>
+                <dd class="col-7">{{ order.created_by.get_full_name|default:order.created_by.username }}</dd>
+                <dt class="col-5">Создан</dt>
+                <dd class="col-7">{{ order.created_at|date:"d.m.Y H:i" }}</dd>
+                <dt class="col-5">Изменён</dt>
+                <dd class="col-7">{{ order.updated_at|date:"d.m.Y H:i" }}</dd>
+                <dt class="col-5">Архив</dt>
+                <dd class="col-7">{{ order.archived|yesno:"Да,Нет" }}</dd>
+            </dl>
+        </section>
+    </div>
+</div>
+{% endblock %}

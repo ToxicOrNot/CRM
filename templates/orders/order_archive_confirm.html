@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Архивировать заказ | CRM{% endblock %}
+
+{% block content %}
+<div class="bg-white border rounded-2 p-4">
+    <h1 class="h3">Архивировать заказ</h1>
+    <p class="mb-4">
+        Заказ <strong>{{ order }}</strong> будет скрыт из основного списка. Связанные задачи останутся в системе.
+    </p>
+    <form method="post" class="d-flex flex-wrap gap-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Архивировать</button>
+        <a href="{{ order.get_absolute_url }}" class="btn btn-outline-secondary">Отмена</a>
+    </form>
+</div>
+{% endblock %}

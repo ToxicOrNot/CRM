@@ -16,6 +16,7 @@ class TaskAdmin(admin.ModelAdmin):
     list_display = (
         "title",
         "assignee",
+        "order",
         "status",
         "priority",
         "due_at",
@@ -24,9 +25,9 @@ class TaskAdmin(admin.ModelAdmin):
         "archived",
     )
     list_filter = ("status", "priority", "assignee", "archived")
-    search_fields = ("title", "description")
+    search_fields = ("title", "description", "order__order_number", "order__contacts")
     readonly_fields = ("creator", "created_at", "updated_at", "completed_at")
-    autocomplete_fields = ("assignee",)
+    autocomplete_fields = ("assignee", "order")
     date_hierarchy = "created_at"
 
     fieldsets = (
@@ -38,6 +39,7 @@ class TaskAdmin(admin.ModelAdmin):
                     "description",
                     "creator",
                     "assignee",
+                    "order",
                     "status",
                     "priority",
                     "due_at",

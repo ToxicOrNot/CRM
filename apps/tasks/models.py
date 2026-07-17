@@ -52,6 +52,14 @@ class Task(models.Model):
         related_name="assigned_tasks",
         on_delete=models.PROTECT,
     )
+    order = models.ForeignKey(
+        "orders.Order",
+        verbose_name="заказ",
+        related_name="tasks",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
     status = models.CharField(
         "статус",
         max_length=20,
