@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}CRM{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'icon.png' %}">
     <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
     <style>
         .task-completion-notice {
@@ -14,6 +15,17 @@
 
         .task-completion-notice.is-fading {
             opacity: 0;
+        }
+
+        .file-dropzone {
+            border: 1px dashed #adb5bd;
+            background-color: #f8f9fa;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+
+        .file-dropzone.is-dragover {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
         }
     </style>
 </head>
@@ -27,9 +39,8 @@
             </button>
             <div class="collapse navbar-collapse" id="mainNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    {% if perms.orders.view_order %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'orders:list' %}">Заказы</a></li>
-                    {% endif %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'clients:list' %}">Клиенты</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'orders:list' %}">Заказы</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'tasks:list' %}">Все задачи</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'tasks:my' %}">Мои задачи</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'tasks:archive' %}">Архив</a></li>
@@ -92,5 +103,6 @@
         }, autohideMs);
     });
 </script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

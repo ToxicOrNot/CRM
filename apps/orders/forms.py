@@ -1,5 +1,7 @@
 from django import forms
 
+from apps.clients.models import Client
+from apps.clients.services.order_contact_snapshot import build_order_contact_snapshot
 from apps.orders.models import Order
 
 
@@ -9,6 +11,7 @@ class OrderForm(forms.ModelForm):
         fields = (
             "order_date",
             "status",
+            "client",
             "order_number",
             "work_information",
             "contacts",
@@ -20,6 +23,7 @@ class OrderForm(forms.ModelForm):
         labels = {
             "order_date": "Дата заказа",
             "status": "Статус",
+            "client": "Клиент",
             "order_number": "Номер заказа",
             "work_information": "Информация о работе",
             "contacts": "Контакты",
@@ -41,7 +45,25 @@ class OrderForm(forms.ModelForm):
     def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
         self.fields["order_date"].input_formats = ["%Y-%m-%d"]
+        client_queryset = Client.objects.active().prefetch_related("contacts")
+        if self.instance and self.instance.client_id:
+            client_queryset = Client.objects.filter(pk=self.instance.client_id) | client_queryset
+        self.fields["client"].queryset = client_queryset.distinct()
+        self.fields["client"].required = False
+        self.fields["contacts"].required = False
         apply_bootstrap_classes(self.fields)
+
+    def clean(self) -> dict[str, object]:
+        cleaned_data = super().clean()
+        client = cleaned_data.get("client")
+        contacts = (cleaned_data.get("contacts") or "").strip()
+        if client and not contacts:
+            contacts = build_order_contact_snapshot(client)
+            cleaned_data["contacts"] = contacts
+            self.instance.contacts = contacts
+        if not contacts:
+            self.add_error("contacts", "Укажите контактный снимок заказа.")
+        return cleaned_data
 
 
 class OrderQuickUpdateForm(forms.ModelForm):

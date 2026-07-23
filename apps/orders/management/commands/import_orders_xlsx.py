@@ -149,16 +149,10 @@ def get_status(status_cell: Cell, fallback_cell: Cell) -> OrderStatus:
 
 def build_comment(
     *,
-    production_place: str,
-    excel_balance: str,
     extra_values: list[str],
     warnings: list[str],
 ) -> str:
     lines: list[str] = []
-    if production_place:
-        lines.append(f"Где печатаем: {production_place}")
-    if excel_balance:
-        lines.append(f"Остаток в Excel: {excel_balance}")
     lines.extend(extra_values)
     if warnings:
         lines.append("Предупреждения импорта:")
@@ -222,7 +216,6 @@ def build_order_from_row(
         if raw_value is not None:
             warnings.append(f"{label} не распознано как число: {raw_value}")
 
-    excel_balance = clean_text(values[10])
     extra_values = [
         clean_text(value)
         for value in values[11:]
@@ -240,8 +233,6 @@ def build_order_from_row(
         advance_amount=advance_amount,
         additional_payment=additional_payment,
         comment=build_comment(
-            production_place=clean_text(values[3]),
-            excel_balance=excel_balance,
             extra_values=extra_values,
             warnings=warnings,
         ),

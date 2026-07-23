@@ -59,6 +59,12 @@ class TaskForm(forms.ModelForm):
                     "-order_date",
                     "-created_at",
                 )
+                field.label_from_instance = self.get_order_label
+
+    @staticmethod
+    def get_order_label(order: object) -> str:
+        work_information = " ".join(str(getattr(order, "work_information", "")).split())
+        return work_information or str(order)
 
     def clean_due_at(self):
         due_date = self.cleaned_data["due_at"]

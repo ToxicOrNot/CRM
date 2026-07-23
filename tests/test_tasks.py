@@ -10,6 +10,8 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.orders.models import Order
+from apps.tasks.forms import TaskForm
 from apps.tasks.models import Task, TaskAttachment, TaskPriority, TaskStatus
 
 
@@ -100,18 +102,19 @@ class TaskWorkflowTests(TestCase):
         self.assertContains(response, assigned_task.title)
         self.assertNotContains(response, "Назначено другому")
 
-    def test_outsider_cannot_edit_foreign_task(self) -> None:
+    def test_authenticated_user_can_edit_foreign_task(self) -> None:
         task = self.create_task(title="Чужая задача")
         self.client.force_login(self.outsider)
 
         response = self.client.post(
             reverse("tasks:edit", kwargs={"pk": task.pk}),
-            data=self.form_data(task, title="Попытка изменения"),
+            data=self.form_data(task, title="Изменено другим пользователем"),
         )
 
-        self.assertEqual(response.status_code, 403)
+        self.assertRedirects(response, task.get_absolute_url())
         task.refresh_from_db()
-        self.assertEqual(task.title, "Чужая задача")
+        self.assertEqual(task.title, "Изменено другим пользователем")
+        self.assertEqual(task.last_modified_by, self.outsider)
 
     def test_creator_can_edit_task(self) -> None:
         task = self.create_task(title="Исходное название")
@@ -125,6 +128,7 @@ class TaskWorkflowTests(TestCase):
         self.assertRedirects(response, task.get_absolute_url())
         task.refresh_from_db()
         self.assertEqual(task.title, "Обновлено постановщиком")
+        self.assertEqual(task.last_modified_by, self.creator)
 
     def test_assignee_can_edit_task(self) -> None:
         task = self.create_task(title="Исходное название")
@@ -138,6 +142,7 @@ class TaskWorkflowTests(TestCase):
         self.assertRedirects(response, task.get_absolute_url())
         task.refresh_from_db()
         self.assertEqual(task.title, "Обновлено исполнителем")
+        self.assertEqual(task.last_modified_by, self.assignee)
 
     def test_status_field_is_not_rendered_in_task_form(self) -> None:
         self.client.force_login(self.creator)
@@ -145,6 +150,29 @@ class TaskWorkflowTests(TestCase):
         response = self.client.get(reverse("tasks:create"))
 
         self.assertNotContains(response, 'name="status"')
+
+    def test_task_form_has_drag_and_drop_file_upload(self) -> None:
+        self.client.force_login(self.creator)
+
+        response = self.client.get(reverse("tasks:create"))
+
+        self.assertContains(response, "data-file-dropzone")
+        self.assertContains(response, "data-file-list")
+        self.assertContains(response, "js/file_dropzone.js")
+
+    def test_task_form_order_field_uses_work_information_as_label(self) -> None:
+        order = Order.objects.create(
+            order_number="A-100",
+            work_information="10 фото 10x15 + 1 фото 15x20 матовые",
+            contacts="Клиент",
+            created_by=self.creator,
+        )
+
+        form = TaskForm()
+        label = form.fields["order"].label_from_instance(order)
+
+        self.assertEqual(label, "10 фото 10x15 + 1 фото 15x20 матовые")
+        self.assertNotIn("A-100", label)
 
     def test_completed_status_sets_completed_at(self) -> None:
         task = self.create_task()
@@ -181,6 +209,7 @@ class TaskWorkflowTests(TestCase):
         self.assertEqual(task.status, TaskStatus.COMPLETED)
         self.assertIsNotNone(task.completed_at)
         self.assertTrue(task.archived)
+        self.assertEqual(task.last_modified_by, self.creator)
         self.assertEqual(self.client.session["task_completion_undo"]["task_id"], task.pk)
 
     def test_completion_notice_is_visible_after_quick_action(self) -> None:
@@ -228,18 +257,23 @@ class TaskWorkflowTests(TestCase):
         self.assertEqual(task.status, TaskStatus.IN_PROGRESS)
         self.assertIsNone(task.completed_at)
         self.assertFalse(task.archived)
+        self.assertEqual(task.last_modified_by, self.creator)
         self.assertNotIn("task_completion_undo", self.client.session)
 
-    def test_outsider_cannot_mark_foreign_task_completed(self) -> None:
+    def test_authenticated_user_can_mark_foreign_task_completed(self) -> None:
         task = self.create_task(status=TaskStatus.IN_PROGRESS)
         self.client.force_login(self.outsider)
 
-        response = self.client.post(reverse("tasks:complete", kwargs={"pk": task.pk}))
+        response = self.client.post(
+            reverse("tasks:complete", kwargs={"pk": task.pk}),
+            data={"next": reverse("tasks:list")},
+        )
 
-        self.assertEqual(response.status_code, 403)
+        self.assertRedirects(response, reverse("tasks:list"))
         task.refresh_from_db()
-        self.assertEqual(task.status, TaskStatus.IN_PROGRESS)
-        self.assertFalse(task.archived)
+        self.assertEqual(task.status, TaskStatus.COMPLETED)
+        self.assertTrue(task.archived)
+        self.assertEqual(task.last_modified_by, self.outsider)
 
     def test_archive_page_shows_archived_tasks_only(self) -> None:
         archived_task = self.create_task(title="Архивная задача", archived=True)
@@ -272,6 +306,7 @@ class TaskWorkflowTests(TestCase):
         task.refresh_from_db()
         self.assertFalse(task.archived)
         self.assertEqual(task.status, TaskStatus.IN_PROGRESS)
+        self.assertEqual(task.last_modified_by, self.creator)
 
     def test_unarchiving_completed_task_moves_it_to_new(self) -> None:
         task = self.create_task(title="Выполненная архивная")
@@ -286,17 +321,31 @@ class TaskWorkflowTests(TestCase):
         self.assertFalse(task.archived)
         self.assertEqual(task.status, TaskStatus.NEW)
         self.assertIsNone(task.completed_at)
+        self.assertEqual(task.last_modified_by, self.creator)
 
-    def test_outsider_cannot_unarchive_foreign_task(self) -> None:
+    def test_authenticated_user_can_unarchive_foreign_task(self) -> None:
         task = self.create_task(archived=True, status=TaskStatus.IN_PROGRESS)
         self.client.force_login(self.outsider)
 
-        response = self.client.post(reverse("tasks:unarchive", kwargs={"pk": task.pk}))
+        response = self.client.post(
+            reverse("tasks:unarchive", kwargs={"pk": task.pk}),
+            data={"next": reverse("tasks:archive")},
+        )
 
-        self.assertEqual(response.status_code, 403)
+        self.assertRedirects(response, reverse("tasks:archive"))
         task.refresh_from_db()
-        self.assertTrue(task.archived)
+        self.assertFalse(task.archived)
         self.assertEqual(task.status, TaskStatus.IN_PROGRESS)
+        self.assertEqual(task.last_modified_by, self.outsider)
+
+    def test_task_detail_shows_last_modifier(self) -> None:
+        task = self.create_task(last_modified_by=self.outsider)
+        self.client.force_login(self.creator)
+
+        response = self.client.get(reverse("tasks:detail", kwargs={"pk": task.pk}))
+
+        self.assertContains(response, "Изменил")
+        self.assertContains(response, self.outsider.username)
 
     def test_overdue_tasks_are_detected(self) -> None:
         task = self.create_task()

@@ -21,12 +21,13 @@ class TaskAdmin(admin.ModelAdmin):
         "priority",
         "due_at",
         "creator",
+        "last_modified_by",
         "created_at",
         "archived",
     )
     list_filter = ("status", "priority", "assignee", "archived")
     search_fields = ("title", "description", "order__order_number", "order__contacts")
-    readonly_fields = ("creator", "created_at", "updated_at", "completed_at")
+    readonly_fields = ("creator", "last_modified_by", "created_at", "updated_at", "completed_at")
     autocomplete_fields = ("assignee", "order")
     date_hierarchy = "created_at"
 
@@ -38,6 +39,7 @@ class TaskAdmin(admin.ModelAdmin):
                     "title",
                     "description",
                     "creator",
+                    "last_modified_by",
                     "assignee",
                     "order",
                     "status",
@@ -57,6 +59,8 @@ class TaskAdmin(admin.ModelAdmin):
     def save_model(self, request, obj: Task, form, change: bool) -> None:
         if not obj.pk:
             obj.creator = request.user
+        elif change:
+            obj.last_modified_by = request.user
         super().save_model(request, obj, form, change)
 
     def save_formset(self, request, form, formset, change: bool) -> None:

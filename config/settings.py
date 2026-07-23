@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "apps.accounts.apps.AccountsConfig",
+    "apps.clients.apps.ClientsConfig",
     "apps.orders.apps.OrdersConfig",
     "apps.tasks.apps.TasksConfig",
 ]
@@ -99,7 +100,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [BASE_DIR / "static", BASE_DIR / "resources"]
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"

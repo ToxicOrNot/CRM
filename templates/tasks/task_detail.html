@@ -71,6 +71,12 @@
                 <dd class="col-7">{{ task.created_at|date:"d.m.Y" }}</dd>
                 <dt class="col-5">Обновлена</dt>
                 <dd class="col-7">{{ task.updated_at|date:"d.m.Y H:i" }}</dd>
+                {% if task.last_modified_by %}
+                    <dt class="col-5">Изменил</dt>
+                    <dd class="col-7">
+                        {{ task.last_modified_by.get_full_name|default:task.last_modified_by.username }}
+                    </dd>
+                {% endif %}
                 <dt class="col-5">Выполнена</dt>
                 <dd class="col-7">{{ task.completed_at|date:"d.m.Y H:i"|default:"-" }}</dd>
             </dl>

@@ -11,6 +11,7 @@ from config.views import DashboardView
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("apps.accounts.urls")),
+    path("clients/", include("apps.clients.urls")),
     path("orders/", include("apps.orders.urls")),
     path("tasks/", include("apps.tasks.urls")),
     path("", DashboardView.as_view(), name="dashboard"),

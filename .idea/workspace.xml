@@ -4,9 +4,18 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b97bd1af-bcfd-4c82-b07c-dbad6939541f" name="Changes" comment="initial commit">
+    <list default="true" id="b97bd1af-bcfd-4c82-b07c-dbad6939541f" name="Changes" comment="Orders function">
+      <change afterPath="$PROJECT_DIR$/resources/icon.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/resources/plus.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/orders/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/orders/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/orders/management/commands/import_orders_xlsx.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/management/commands/import_orders_xlsx.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/orders/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/orders/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/orders/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/tasks/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/tasks/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/tasks/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/tasks/forms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/tasks/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/tasks/models.py" afterDir="false" />
@@ -15,8 +24,14 @@
       <change beforePath="$PROJECT_DIR$/config/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/orders/order_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/orders/order_detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/orders/order_form.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/orders/order_form.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/orders/order_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/orders/order_list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/tasks/task_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/tasks/task_detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/tasks/task_form.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/tasks/task_form.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/tasks/task_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/tasks/task_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_orders.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_orders.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_tasks.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_tasks.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,7 +39,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="51" />
+    <option name="cachedIndexableFilesCount" value="222" />
   </component>
   <component name="Git.Settings">
     <excluded-from-favorite>
@@ -42,79 +57,79 @@
     </excluded-from-favorite>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "ToxicOrNot"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;ToxicOrNot&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/ToxicOrNot/CRM.git",
-    "accountId": "5f9aff0d-d363-4795-8444-d1fbb13f7a4b"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/ToxicOrNot/CRM.git&quot;,
+    &quot;accountId&quot;: &quot;5f9aff0d-d363-4795-8444-d1fbb13f7a4b&quot;
   }
-}]]></component>
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="2.280760985385644" />
-      <entry key="MS500" value="5.148069875820094" />
-      <entry key="S2" value="14.144166544822669" />
-      <entry key="S5" value="32.094459462084664" />
-      <entry key="S10" value="55.89947009614628" />
-      <entry key="S30" value="98.46926065906446" />
-      <entry key="S60" value="118.83477204117645" />
-      <entry key="M2" value="141.28675257057708" />
-      <entry key="M5" value="194.0766280569774" />
-      <entry key="M10" value="249.88319076672548" />
-      <entry key="M15" value="295.6577560592762" />
-      <entry key="M30" value="479.9674630151776" />
-      <entry key="H1" value="974.3339795860908" />
-      <entry key="H2" value="1856.904688305557" />
-      <entry key="H4" value="2837.844640532565" />
-      <entry key="D1" value="4266.005852482401" />
-      <entry key="W1" value="4596.806321975059" />
+      <entry key="MS100" value="1.0630122583362533" />
+      <entry key="MS500" value="3.3862916734094197" />
+      <entry key="S2" value="7.190212876601814" />
+      <entry key="S5" value="11.17215003639805" />
+      <entry key="S10" value="21.34244873302623" />
+      <entry key="S30" value="46.345984630084224" />
+      <entry key="S60" value="58.56789145280699" />
+      <entry key="M2" value="66.17351156214146" />
+      <entry key="M5" value="71.33119729884156" />
+      <entry key="M10" value="76.29966538616576" />
+      <entry key="M15" value="93.48150150060427" />
+      <entry key="M30" value="220.94308141298396" />
+      <entry key="H1" value="534.6777068015202" />
+      <entry key="H2" value="1013.0743839912885" />
+      <entry key="H4" value="1911.2847413767947" />
+      <entry key="D1" value="6665.7365520498715" />
+      <entry key="W1" value="9049.022583271215" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
       <entry key="MS500" value="0.0" />
       <entry key="S2" value="0.0" />
-      <entry key="S5" value="2.2608590407650392E-263" />
-      <entry key="S10" value="6.558330481600731E-132" />
-      <entry key="S30" value="2.9540714120625944E-44" />
-      <entry key="S60" value="2.428878239874007E-22" />
-      <entry key="M2" value="2.2036257043563712E-11" />
-      <entry key="M5" value="8.27663709502984E-5" />
-      <entry key="M10" value="0.01286585793103799" />
-      <entry key="M15" value="0.0691780720661455" />
-      <entry key="M30" value="0.37196225262494437" />
-      <entry key="H1" value="0.8625104059901728" />
-      <entry key="H2" value="1.3134004093504157" />
-      <entry key="H4" value="1.620740803285106" />
-      <entry key="D1" value="1.931125905996693" />
-      <entry key="W1" value="1.9900124562179549" />
+      <entry key="S5" value="6.912489153319648E-249" />
+      <entry key="S10" value="9.786898993842685E-125" />
+      <entry key="S30" value="6.874100254109666E-42" />
+      <entry key="S60" value="3.675452055434137E-21" />
+      <entry key="M2" value="8.554654480256712E-11" />
+      <entry key="M5" value="1.4231993829756783E-4" />
+      <entry key="M10" value="0.01686976220177833" />
+      <entry key="M15" value="0.08287190541153157" />
+      <entry key="M30" value="0.40711245317847505" />
+      <entry key="H1" value="0.902682217105599" />
+      <entry key="H2" value="1.3761821664013452" />
+      <entry key="H4" value="1.9881385563165743" />
+      <entry key="D1" value="4.5839232868772735" />
+      <entry key="W1" value="5.761364361293091" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="2.2159388121257" />
-      <entry key="MS500" value="5.118567293494177" />
-      <entry key="S2" value="14.12172460739203" />
-      <entry key="S5" value="32.07301472753402" />
-      <entry key="S10" value="55.88038817444239" />
-      <entry key="S30" value="98.45786967169833" />
-      <entry key="S60" value="118.82713260142164" />
-      <entry key="M2" value="141.27730252858836" />
-      <entry key="M5" value="194.06369533255187" />
-      <entry key="M10" value="249.8853056152825" />
-      <entry key="M15" value="295.7181854094911" />
-      <entry key="M30" value="480.3334536965263" />
-      <entry key="H1" value="975.1923804352823" />
-      <entry key="H2" value="1858.215323389893" />
-      <entry key="H4" value="2839.463655733647" />
-      <entry key="D1" value="4267.936612951818" />
-      <entry key="W1" value="4598.796279717997" />
+      <entry key="MS100" value="1.0099835171515148" />
+      <entry key="MS500" value="3.326236510943238" />
+      <entry key="S2" value="7.157864181539736" />
+      <entry key="S5" value="11.153654034081265" />
+      <entry key="S10" value="21.326356714474713" />
+      <entry key="S30" value="46.33486336982129" />
+      <entry key="S60" value="58.56090398179644" />
+      <entry key="M2" value="66.16957172927064" />
+      <entry key="M5" value="71.32963931884416" />
+      <entry key="M10" value="76.3154469022759" />
+      <entry key="M15" value="93.56303651759352" />
+      <entry key="M30" value="221.3478276871471" />
+      <entry key="H1" value="535.5776419170592" />
+      <entry key="H2" value="1014.4482910638338" />
+      <entry key="H4" value="1913.2711719369015" />
+      <entry key="D1" value="6670.319813941883" />
+      <entry key="W1" value="9054.78382802998" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -136,6 +151,8 @@
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/Пользователь/PycharmProjects/CRM/resources",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -150,6 +167,14 @@
     ]
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Пользователь\PycharmProjects\CRM\resources" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Windows\System32" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -166,7 +191,10 @@
       <updated>1784276091653</updated>
       <workItem from="1784276340949" duration="1909000" />
       <workItem from="1784278982541" duration="1202000" />
-      <workItem from="1784284802582" duration="18745000" />
+      <workItem from="1784284802582" duration="26718000" />
+      <workItem from="1784358416777" duration="8967000" />
+      <workItem from="1784640381056" duration="5612000" />
+      <workItem from="1784802014304" duration="2901000" />
     </task>
     <task id="LOCAL-00001" summary="initial commit">
       <option name="closed" value="true" />
@@ -184,7 +212,15 @@
       <option name="project" value="LOCAL" />
       <updated>1784292602360</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Orders function">
+      <option name="closed" value="true" />
+      <created>1784304814676</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1784304814676</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -192,6 +228,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="initial commit" />
-    <option name="LAST_COMMIT_MESSAGE" value="initial commit" />
+    <MESSAGE value="Orders function" />
+    <option name="LAST_COMMIT_MESSAGE" value="Orders function" />
   </component>
 </project>

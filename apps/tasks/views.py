@@ -7,7 +7,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.uploadedfile import UploadedFile
 from django.db.models import Case, F, IntegerField, QuerySet, When
 from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotFound
@@ -71,7 +71,12 @@ class TaskListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = (
-            Task.objects.select_related("creator", "assignee", "order")
+            Task.objects.select_related(
+                "creator",
+                "assignee",
+                "last_modified_by",
+                "order",
+            )
             .prefetch_related("attachments", "attachments__uploaded_by")
             .filter(archived=False)
             .order_by("-created_at")
@@ -185,7 +190,12 @@ class ArchiveTaskListView(TaskListView):
 
     def get_queryset(self):
         queryset = (
-            Task.objects.select_related("creator", "assignee", "order")
+            Task.objects.select_related(
+                "creator",
+                "assignee",
+                "last_modified_by",
+                "order",
+            )
             .prefetch_related("attachments", "attachments__uploaded_by")
             .filter(archived=True)
             .order_by("-updated_at")
@@ -207,7 +217,12 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
     context_object_name = "task"
 
     def get_queryset(self):
-        return Task.objects.select_related("creator", "assignee", "order").prefetch_related(
+        return Task.objects.select_related(
+            "creator",
+            "assignee",
+            "last_modified_by",
+            "order",
+        ).prefetch_related(
             "attachments",
             "attachments__uploaded_by",
         )
@@ -254,25 +269,27 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
         return context
 
 
-class TaskUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+class TaskUpdateView(LoginRequiredMixin, UpdateView):
     model = Task
     form_class = TaskForm
     template_name = "tasks/task_form.html"
 
     def get_queryset(self):
-        return Task.objects.select_related("creator", "assignee", "order").prefetch_related(
+        return Task.objects.select_related(
+            "creator",
+            "assignee",
+            "last_modified_by",
+            "order",
+        ).prefetch_related(
             "attachments",
             "attachments__uploaded_by",
         )
-
-    def test_func(self) -> bool:
-        task = self.get_object()
-        return task.can_be_edited_by(self.request.user)
 
     def get_success_url(self) -> str:
         return self.object.get_absolute_url()
 
     def form_valid(self, form: TaskForm):
+        form.instance.last_modified_by = self.request.user
         response = super().form_valid(form)
         save_task_attachments(
             task=self.object,
@@ -304,6 +321,7 @@ class TaskCompleteView(LoginRequiredMixin, View):
         }
         task.set_status(TaskStatus.COMPLETED)
         task.archived = True
+        task.last_modified_by = request.user
         task.save()
         return redirect(self.get_success_url())
 
@@ -334,6 +352,7 @@ class TaskUndoCompleteView(LoginRequiredMixin, View):
 
         task.set_status(previous_status)
         task.archived = bool(undo_data.get("previous_archived", False))
+        task.last_modified_by = request.user
         task.save()
         request.session.pop("task_completion_undo", None)
         messages.info(request, f"Отметка выполнения задачи «{task.title}» отменена.")
@@ -357,6 +376,7 @@ class TaskUnarchiveView(LoginRequiredMixin, View):
             return HttpResponseForbidden("Недостаточно прав для изменения задачи.")
 
         task.unarchive()
+        task.last_modified_by = request.user
         task.save()
         messages.success(request, f"Задача «{task.title}» убрана из архива.")
         return redirect(self.get_success_url())

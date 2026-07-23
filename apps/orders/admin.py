@@ -1,14 +1,23 @@
 from django.contrib import admin
 
-from apps.orders.models import Order
+from apps.orders.models import Order, OrderAttachment
+
+
+class OrderAttachmentInline(admin.TabularInline):
+    model = OrderAttachment
+    extra = 0
+    readonly_fields = ("original_name", "uploaded_by", "uploaded_at")
+    fields = ("file", "original_name", "uploaded_by", "uploaded_at")
 
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    inlines = (OrderAttachmentInline,)
     list_display = (
         "sequence_number_display",
         "order_date",
         "display_number_display",
+        "client",
         "status",
         "short_contacts",
         "total_amount",
@@ -19,9 +28,10 @@ class OrderAdmin(admin.ModelAdmin):
         "archived",
     )
     list_filter = ("status", "order_date", "delivery_date", "archived")
-    search_fields = ("order_number", "contacts", "work_information")
+    search_fields = ("order_number", "contacts", "original_contacts", "work_information", "client__display_name")
     readonly_fields = (
         "delivery_date",
+        "original_contacts",
         "created_by",
         "created_at",
         "updated_at",
@@ -37,9 +47,11 @@ class OrderAdmin(admin.ModelAdmin):
                     "order_date",
                     "delivery_date",
                     "status",
+                    "client",
                     "order_number",
                     "work_information",
                     "contacts",
+                    "original_contacts",
                     "comment",
                     "archived",
                 ),
@@ -87,4 +99,32 @@ class OrderAdmin(admin.ModelAdmin):
     def save_model(self, request, obj: Order, form, change: bool) -> None:
         if not obj.pk:
             obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+    def save_formset(self, request, form, formset, change: bool) -> None:
+        instances = formset.save(commit=False)
+        for deleted_object in formset.deleted_objects:
+            deleted_object.delete()
+        for instance in instances:
+            if isinstance(instance, OrderAttachment) and instance.file:
+                if not instance.original_name:
+                    instance.original_name = instance.file.name
+                if not instance.uploaded_by_id:
+                    instance.uploaded_by = request.user
+            instance.save()
+        formset.save_m2m()
+
+
+@admin.register(OrderAttachment)
+class OrderAttachmentAdmin(admin.ModelAdmin):
+    list_display = ("original_name", "order", "uploaded_by", "uploaded_at")
+    list_filter = ("uploaded_at", "uploaded_by")
+    search_fields = ("original_name", "order__order_number", "order__work_information")
+    readonly_fields = ("original_name", "uploaded_by", "uploaded_at")
+
+    def save_model(self, request, obj: OrderAttachment, form, change: bool) -> None:
+        if obj.file and not obj.original_name:
+            obj.original_name = obj.file.name
+        if not obj.uploaded_by_id:
+            obj.uploaded_by = request.user
         super().save_model(request, obj, form, change)

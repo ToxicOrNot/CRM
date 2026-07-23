@@ -8,6 +8,8 @@ db.sqlite3
 staticfiles/
 media/*
 !media/.gitkeep
+backups/*
+!backups/.gitkeep
 .pytest_cache/
 .coverage
 htmlcov/

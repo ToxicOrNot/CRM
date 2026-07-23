@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from pathlib import Path
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -8,6 +9,24 @@ from django.db import models
 from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
+
+
+def order_attachment_upload_to(instance: "OrderAttachment", filename: str) -> str:
+    return f"orders/{instance.order_id}/attachments/{filename}"
+
+
+IMAGE_ATTACHMENT_EXTENSIONS = {
+    ".avif",
+    ".bmp",
+    ".gif",
+    ".heic",
+    ".heif",
+    ".jpeg",
+    ".jpg",
+    ".png",
+    ".webp",
+}
+HEIC_ATTACHMENT_EXTENSIONS = {".heic", ".heif"}
 
 
 class OrderStatus(models.TextChoices):
@@ -43,9 +62,18 @@ class Order(models.Model):
         choices=OrderStatus.choices,
         default=OrderStatus.ACCEPTED,
     )
+    client = models.ForeignKey(
+        "clients.Client",
+        verbose_name="Клиент",
+        related_name="orders",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
     order_number = models.CharField("Номер заказа", max_length=100, blank=True)
     work_information = models.TextField("Информация о работе")
     contacts = models.TextField("Контакты")
+    original_contacts = models.TextField("Исходная запись контактов", blank=True, default="")
     total_amount = models.DecimalField(
         "Сумма к оплате",
         max_digits=12,
@@ -180,3 +208,49 @@ class Order(models.Model):
 
     def restore_from_archive(self) -> None:
         self.archived = False
+
+
+class OrderAttachment(models.Model):
+    order = models.ForeignKey(
+        Order,
+        verbose_name="заказ",
+        related_name="attachments",
+        on_delete=models.CASCADE,
+    )
+    file = models.FileField("файл", upload_to=order_attachment_upload_to)
+    original_name = models.CharField("имя файла", max_length=255)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="загрузил",
+        related_name="order_attachments",
+        on_delete=models.PROTECT,
+    )
+    uploaded_at = models.DateTimeField("дата загрузки", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "файл заказа"
+        verbose_name_plural = "файлы заказов"
+        ordering = ("-uploaded_at",)
+        indexes = [
+            models.Index(fields=("order",), name="order_attach_order_idx"),
+            models.Index(fields=("uploaded_at",), name="order_attach_uploaded_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return self.original_name
+
+    @property
+    def is_image(self) -> bool:
+        file_name = self.original_name or self.file.name
+        return Path(file_name).suffix.lower() in IMAGE_ATTACHMENT_EXTENSIONS
+
+    @property
+    def is_heic_image(self) -> bool:
+        file_name = self.original_name or self.file.name
+        return Path(file_name).suffix.lower() in HEIC_ATTACHMENT_EXTENSIONS
+
+    @property
+    def preview_url(self) -> str:
+        if self.is_heic_image:
+            return reverse("orders:attachment_preview", kwargs={"pk": self.pk})
+        return self.file.url

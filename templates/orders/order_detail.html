@@ -11,17 +11,24 @@
     <div class="d-flex flex-wrap gap-2">
         <a href="{% url 'orders:list' %}" class="btn btn-outline-secondary">К списку</a>
         <a href="{% url 'tasks:create' %}?order={{ order.pk }}" class="btn btn-outline-primary">Создать задачу для заказа</a>
-        {% if perms.orders.change_order %}
-            <a href="{% url 'orders:edit' order.pk %}" class="btn btn-primary">Редактировать</a>
-            {% if order.archived %}
-                <form method="post" action="{% url 'orders:restore' order.pk %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                    <button type="submit" class="btn btn-outline-success">Восстановить</button>
-                </form>
-            {% else %}
-                <a href="{% url 'orders:archive_item' order.pk %}" class="btn btn-outline-danger">Архивировать</a>
-            {% endif %}
+        {% if not order.client %}
+            <form method="post" action="{% url 'orders:resolve_client' order.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-primary">Создать/определить клиента</button>
+            </form>
+        {% endif %}
+        {% if order.attachments.all %}
+            <a href="{% url 'orders:download_attachments' order.pk %}" class="btn btn-outline-secondary">Скачать все файлы</a>
+        {% endif %}
+        <a href="{% url 'orders:edit' order.pk %}" class="btn btn-primary">Редактировать</a>
+        {% if order.archived %}
+            <form method="post" action="{% url 'orders:restore' order.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-outline-success">Восстановить</button>
+            </form>
+        {% else %}
+            <a href="{% url 'orders:archive_item' order.pk %}" class="btn btn-outline-danger">Архивировать</a>
         {% endif %}
     </div>
 </div>
@@ -39,6 +46,14 @@
                 <dd class="col-sm-8">{{ order.get_status_display }}</dd>
                 <dt class="col-sm-4">Номер заказа</dt>
                 <dd class="col-sm-8">{{ order.display_number }}</dd>
+                <dt class="col-sm-4">Клиент</dt>
+                <dd class="col-sm-8">
+                    {% if order.client %}
+                        <a href="{{ order.client.get_absolute_url }}">{{ order.client }}</a>
+                    {% else %}
+                        <span class="text-muted">Не указан</span>
+                    {% endif %}
+                </dd>
             </dl>
         </section>
 
@@ -49,12 +64,62 @@
 
         <section class="bg-white border rounded-2 p-3 mb-3">
             <h2 class="h5">Контакты</h2>
+            <div class="text-muted small mb-1">Снимок контактов в заказе</div>
             <div class="text-break">{{ order.contacts|linebreaksbr }}</div>
+            {% if order.original_contacts %}
+                <hr>
+                <div class="text-muted small mb-1">Исходная запись при создании заказа</div>
+                <div class="text-break">{{ order.original_contacts|linebreaksbr }}</div>
+            {% endif %}
+            {% if order.client %}
+                <hr>
+                <div class="text-muted small mb-1">Актуальные контакты клиента</div>
+                {% if order.client.contacts.all %}
+                    <ul class="mb-0">
+                        {% for contact in order.client.contacts.all %}
+                            <li>{{ contact.get_contact_type_display }}: {{ contact.display_value }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-muted">У клиента нет контактов</div>
+                {% endif %}
+            {% endif %}
         </section>
 
         <section class="bg-white border rounded-2 p-3 mb-3">
             <h2 class="h5">Комментарий</h2>
             <div class="text-break">{{ order.comment|linebreaksbr|default:"Комментарий не указан" }}</div>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <h2 class="h5 mb-0">Файлы{% if order.attachment_count %} ({{ order.attachment_count }}){% endif %}</h2>
+                {% if order.attachments.all %}
+                    <a href="{% url 'orders:download_attachments' order.pk %}" class="btn btn-sm btn-outline-secondary">Скачать все файлы</a>
+                {% endif %}
+            </div>
+            {% if order.attachments.all %}
+                <ul class="list-group">
+                    {% for attachment in order.attachments.all %}
+                        <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <a href="{{ attachment.file.url }}" target="_blank" rel="noopener">{{ attachment.original_name }}</a>
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <span class="text-muted small">
+                                    {{ attachment.uploaded_by.get_full_name|default:attachment.uploaded_by.username }},
+                                    {{ attachment.uploaded_at|date:"d.m.Y H:i" }}
+                                </span>
+                                <form method="post" action="{% url 'orders:delete_attachment' attachment.pk %}" class="m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                                </form>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="text-muted">Файлы не прикреплены</div>
+            {% endif %}
         </section>
     </div>
 

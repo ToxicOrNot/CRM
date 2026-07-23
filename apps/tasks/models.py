@@ -52,6 +52,14 @@ class Task(models.Model):
         related_name="assigned_tasks",
         on_delete=models.PROTECT,
     )
+    last_modified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="изменил",
+        related_name="modified_tasks",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
     order = models.ForeignKey(
         "orders.Order",
         verbose_name="заказ",
@@ -133,13 +141,7 @@ class Task(models.Model):
             self.completed_at = None
 
     def can_be_edited_by(self, user: object) -> bool:
-        if not getattr(user, "is_authenticated", False):
-            return False
-        return bool(
-            getattr(user, "is_superuser", False)
-            or user == self.creator
-            or user == self.assignee
-        )
+        return bool(getattr(user, "is_authenticated", False))
 
     def is_overdue_at(self, moment) -> bool:
         return bool(
