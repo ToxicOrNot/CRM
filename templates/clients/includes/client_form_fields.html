@@ -1,0 +1,84 @@
+{% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+{% endif %}
+
+<div class="row g-3">
+    {% for field in form %}
+        <div class="{% if field.name == 'comment' or field.name == 'source_text' %}col-12{% else %}col-12 col-md-6{% endif %}">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>
+
+<hr>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <h2 class="h5 mb-0">Контакты</h2>
+    <button type="button" class="btn btn-sm btn-outline-primary" id="add-contact-row">Добавить контакт</button>
+</div>
+
+{% if formset.non_form_errors %}
+    <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+{% endif %}
+
+{{ formset.management_form }}
+<div class="table-responsive">
+    <table class="table table-sm align-middle" id="contacts-table">
+        <thead>
+            <tr>
+                <th>Тип</th>
+                <th>Значение</th>
+                <th>Подпись</th>
+                <th>Комментарий</th>
+                <th>Основной</th>
+                <th>Удалить</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contact_form in formset %}
+                <tr>
+                    {% for hidden in contact_form.hidden_fields %}{{ hidden }}{% endfor %}
+                    <td>{{ contact_form.contact_type }}{{ contact_form.contact_type.errors }}</td>
+                    <td>{{ contact_form.raw_value }}{{ contact_form.raw_value.errors }}</td>
+                    <td>{{ contact_form.label }}{{ contact_form.label.errors }}</td>
+                    <td>{{ contact_form.comment }}{{ contact_form.comment.errors }}</td>
+                    <td class="text-center">{{ contact_form.is_primary }}{{ contact_form.is_primary.errors }}</td>
+                    <td class="text-center">
+                        {% if contact_form.DELETE %}
+                            {{ contact_form.DELETE }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if contact_form.non_field_errors %}
+                    <tr><td colspan="6"><div class="text-danger small">{{ contact_form.non_field_errors }}</div></td></tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<template id="empty-contact-row">
+    <tr>
+        {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+        <td>{{ formset.empty_form.contact_type }}</td>
+        <td>{{ formset.empty_form.raw_value }}</td>
+        <td>{{ formset.empty_form.label }}</td>
+        <td>{{ formset.empty_form.comment }}</td>
+        <td class="text-center">{{ formset.empty_form.is_primary }}</td>
+        <td class="text-center">{{ formset.empty_form.DELETE }}</td>
+    </tr>
+</template>
+
+<script>
+    document.getElementById("add-contact-row")?.addEventListener("click", () => {
+        const totalForms = document.getElementById("id_contacts-TOTAL_FORMS");
+        const index = Number(totalForms.value);
+        const template = document.getElementById("empty-contact-row").innerHTML.replaceAll("__prefix__", index);
+        document.querySelector("#contacts-table tbody").insertAdjacentHTML("beforeend", template);
+        totalForms.value = index + 1;
+    });
+</script>
+

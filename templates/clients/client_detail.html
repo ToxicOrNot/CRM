@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ client }} | CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div>
+        <h1 class="h3 mb-1">{{ client }}</h1>
+        <div class="text-muted">Карточка клиента</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'clients:list' %}" class="btn btn-outline-secondary">К списку</a>
+        {% if not client.archived %}
+            <a href="{% url 'orders:create' %}?client={{ client.pk }}" class="btn btn-outline-primary">Создать заказ</a>
+        {% endif %}
+        <a href="{% url 'clients:edit' client.pk %}" class="btn btn-primary">Редактировать</a>
+        {% if client.archived %}
+            <form method="post" action="{% url 'clients:restore' client.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-outline-success">Восстановить</button>
+            </form>
+        {% else %}
+            <a href="{% url 'clients:archive_item' client.pk %}" class="btn btn-outline-danger">Архивировать</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-xl-8">
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <h2 class="h5">Основная информация</h2>
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Имя клиента</dt>
+                <dd class="col-sm-8">{{ client.display_name }}</dd>
+                <dt class="col-sm-4">Предпочтительный канал</dt>
+                <dd class="col-sm-8">{{ client.get_preferred_channel_display }}</dd>
+            </dl>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <h2 class="h5">Контакты</h2>
+            {% if client.contacts.all %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Исходное значение</th>
+                                <th>Нормализованное значение</th>
+                                <th>Подпись</th>
+                                <th>Основной</th>
+                                <th>Комментарий</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contact in client.contacts.all %}
+                                <tr>
+                                    <td>{{ contact.get_contact_type_display }}</td>
+                                    <td>{{ contact.raw_value }}</td>
+                                    <td>{{ contact.display_value }}</td>
+                                    <td>{{ contact.label }}</td>
+                                    <td>{{ contact.is_primary|yesno:"Да,Нет" }}</td>
+                                    <td>{{ contact.comment }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-muted">Контакты не указаны</div>
+            {% endif %}
+        </section>
+
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <h2 class="h5">Комментарий</h2>
+            <div class="text-break">{{ client.comment|linebreaksbr }}</div>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <h2 class="h5">Исходная запись</h2>
+            <div class="text-break">{{ client.source_text|linebreaksbr }}</div>
+        </section>
+    </div>
+
+    <div class="col-12 col-xl-4">
+        <section class="bg-white border rounded-2 p-3 mb-3">
+            <h2 class="h5">Заказы клиента</h2>
+            {% if client.orders.all %}
+                <div class="list-group list-group-flush">
+                    {% for order in client.orders.all %}
+                        <a href="{{ order.get_absolute_url }}" class="list-group-item list-group-item-action px-0">
+                            <div class="fw-semibold">Заказ {{ order.display_number }}</div>
+                            <div class="small text-muted">
+                                {{ order.order_date|date:"d.m.Y" }},
+                                {{ order.get_status_display }},
+                                сумма {{ order.total_amount|floatformat:2 }},
+                                остаток {{ order.balance|floatformat:2 }}
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-muted">Заказов нет</div>
+            {% endif %}
+        </section>
+
+        <section class="bg-white border rounded-2 p-3">
+            <h2 class="h5">Служебная информация</h2>
+            <dl class="row mb-0">
+                <dt class="col-5">Создал</dt>
+                <dd class="col-7">{{ client.created_by.get_full_name|default:client.created_by.username }}</dd>
+                <dt class="col-5">Создан</dt>
+                <dd class="col-7">{{ client.created_at|date:"d.m.Y H:i" }}</dd>
+                <dt class="col-5">Изменён</dt>
+                <dd class="col-7">{{ client.updated_at|date:"d.m.Y H:i" }}</dd>
+                <dt class="col-5">Архив</dt>
+                <dd class="col-7">{{ client.archived|yesno:"Да,Нет" }}</dd>
+            </dl>
+        </section>
+    </div>
+</div>
+{% endblock %}

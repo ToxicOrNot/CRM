@@ -1,0 +1,20 @@
+{% for client in clients %}
+    <tr onclick="window.location='{{ client.get_absolute_url }}'" style="cursor: pointer;">
+        <td class="fw-semibold">{{ client.display_name|default:"Без имени" }}</td>
+        <td>{{ client.primary_contact_display }}</td>
+        <td>{{ client.get_preferred_channel_display|default:"" }}</td>
+        <td>{{ client.available_channels_display }}</td>
+        <td class="text-end">{{ client.orders_count }}</td>
+        <td>{{ client.last_order_date|date:"d.m.Y" }}</td>
+        <td class="text-truncate" style="max-width: 260px;">{{ client.comment }}</td>
+    </tr>
+{% empty %}
+    <tr>
+        <td colspan="7" class="text-center text-muted py-4">Клиенты не найдены</td>
+    </tr>
+{% endfor %}
+{% if infinite_next_url %}
+    <tr class="d-none" data-next-page-url="{{ infinite_next_url }}">
+        <td colspan="7"></td>
+    </tr>
+{% endif %}

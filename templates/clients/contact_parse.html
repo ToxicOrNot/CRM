@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Разобрать контактную строку | CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <h1 class="h3 mb-0">Разобрать контактную строку</h1>
+    <a href="{% url 'clients:list' %}" class="btn btn-outline-secondary">К списку</a>
+</div>
+
+<form method="post" class="bg-white border rounded-2 p-3">
+    {% csrf_token %}
+    <label class="form-label" for="{{ form.source_text.id_for_label }}">{{ form.source_text.label }}</label>
+    {{ form.source_text }}
+    {% for error in form.source_text.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary mt-3">Разобрать</button>
+</form>
+{% endblock %}
+

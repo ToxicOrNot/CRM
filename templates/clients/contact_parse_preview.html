@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Предварительный разбор | CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <h1 class="h3 mb-0">Предварительный разбор</h1>
+    <a href="{% url 'clients:parse' %}" class="btn btn-outline-secondary">Отмена</a>
+</div>
+
+<div class="bg-white border rounded-2 p-3 mb-3">
+    <dl class="row mb-0">
+        <dt class="col-sm-3">Исходная строка</dt>
+        <dd class="col-sm-9">{{ parsed.source_text }}</dd>
+        <dt class="col-sm-3">Уверенность</dt>
+        <dd class="col-sm-9">{{ parsed.confidence|floatformat:2 }}</dd>
+        <dt class="col-sm-3">Требует подтверждения</dt>
+        <dd class="col-sm-9">{{ parsed.requires_confirmation|yesno:"Да,Нет" }}</dd>
+        <dt class="col-sm-3">Предупреждения</dt>
+        <dd class="col-sm-9">
+            {% if parsed.warnings %}
+                <ul class="mb-0">
+                    {% for warning in parsed.warnings %}<li>{{ warning }}</li>{% endfor %}
+                </ul>
+            {% else %}
+                Нет
+            {% endif %}
+        </dd>
+    </dl>
+</div>
+
+<form method="post" action="{% url 'clients:parse_confirm' %}" class="bg-white border rounded-2 p-3" novalidate>
+    {% csrf_token %}
+    {% include "clients/includes/client_form_fields.html" %}
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">Создать клиента</button>
+        <a href="{% url 'clients:parse' %}" class="btn btn-outline-secondary">Отмена</a>
+    </div>
+</form>
+{% endblock %}

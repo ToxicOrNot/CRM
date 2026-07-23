@@ -1,0 +1,231 @@
+{% for order in orders %}
+    <tr
+        class="order-summary-row {{ order.status_row_class }}"
+        role="button"
+        tabindex="0"
+        data-bs-toggle="collapse"
+        data-bs-target="#order-details-{{ order.pk }}"
+        aria-expanded="false"
+        aria-controls="order-details-{{ order.pk }}"
+        style="cursor: pointer;"
+    >
+        <td class="fw-semibold">{{ order.sequence_number }}</td>
+        <td>{{ order.order_date|date:"d.m.Y" }}</td>
+        <td>
+            {{ order.get_status_display }}
+            {% if order.is_paid %}
+                <span class="badge text-bg-success ms-1">Оплачено</span>
+            {% endif %}
+            {% if order.is_overdue %}
+                <span class="badge text-bg-danger ms-1">Просрочен</span>
+            {% endif %}
+        </td>
+        <td>{{ order.delivery_date|date:"d.m.Y" }}</td>
+        <td class="fw-semibold">
+            {{ order.display_number }}
+            {% if order.comment %}
+                <span class="order-comment-indicator ms-1" title="Есть комментарий" aria-label="Есть комментарий">!</span>
+            {% endif %}
+            {% if order.attachments.all %}
+                <span class="order-file-indicator ms-1" title="Есть файлы" aria-label="Есть файлы"></span>
+            {% endif %}
+        </td>
+        <td class="order-work-cell">
+            <span class="d-inline-block text-truncate order-work-text">{{ order.work_information }}</span>
+        </td>
+        <td class="order-contacts-cell">
+            <span class="d-inline-block text-truncate order-contacts-text">{{ order.contacts }}</span>
+        </td>
+        <td class="text-end order-money-cell">{{ order.total_amount|floatformat:2 }}</td>
+        <td class="text-end order-money-cell">{{ order.advance_amount|floatformat:2 }}</td>
+        <td class="text-end order-money-cell">{{ order.additional_payment|floatformat:2 }}</td>
+        <td class="text-end fw-semibold order-money-cell">{{ order.balance|floatformat:2 }}</td>
+    </tr>
+    <tr>
+        <td colspan="11" class="p-0 border-0">
+            <div
+                class="collapse"
+                id="order-details-{{ order.pk }}"
+                data-bs-parent="#orders-table-body"
+            >
+                <div class="border-top bg-light p-3">
+                    <div class="row g-3">
+                        <div class="col-12 col-xl-7">
+                            <div class="bg-white border rounded-2 p-3 h-100">
+                                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                                    <div>
+                                        <div class="text-muted small">Заказ</div>
+                                        <div class="h5 mb-0">{{ order.display_number }}</div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a href="{{ order.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">Карточка</a>
+                                        <a href="{% url 'tasks:create' %}?order={{ order.pk }}" class="btn btn-sm btn-outline-primary">Создать задачу</a>
+                                        <a href="{% url 'orders:edit' order.pk %}" class="btn btn-sm btn-primary">Редактировать</a>
+                                        {% if order.archived %}
+                                            <form method="post" action="{% url 'orders:restore' order.pk %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="next" value="{{ list_return_url }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-success">Восстановить</button>
+                                            </form>
+                                        {% else %}
+                                            <a href="{% url 'orders:archive_item' order.pk %}" class="btn btn-sm btn-outline-danger">Архивировать</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12 col-lg-6">
+                                        <div class="text-muted small mb-1">Информация о работе</div>
+                                        <div class="text-break">{{ order.work_information|linebreaksbr }}</div>
+                                    </div>
+                                    <div class="col-12 col-lg-6">
+                                        <div class="text-muted small mb-1">Контакты</div>
+                                        <div class="text-break">{{ order.contacts|linebreaksbr }}</div>
+                                        {% if order.original_contacts %}
+                                            <div class="text-muted small mt-3 mb-1">Исходная запись</div>
+                                            <div class="text-break">{{ order.original_contacts|linebreaksbr }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="text-muted small mb-1">Комментарий</div>
+                                        <div class="text-break">{{ order.comment|linebreaksbr|default:"Комментарий не указан" }}</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+                                            <div class="text-muted small">
+                                                Файлы{% if order.attachment_count %} ({{ order.attachment_count }}){% endif %}
+                                            </div>
+                                            {% if order.attachments.all %}
+                                                <a href="{% url 'orders:download_attachments' order.pk %}" class="btn btn-sm btn-outline-secondary">Скачать все файлы</a>
+                                            {% endif %}
+                                        </div>
+                                        {% if order.attachments.all %}
+                                            {% if order.photo_preview_attachments %}
+                                                <div class="order-photo-preview mb-2">
+                                                    {% for attachment in order.photo_preview_attachments %}
+                                                        <div class="order-photo-item">
+                                                            <a href="{{ attachment.file.url }}" target="_blank" rel="noopener" class="order-photo-thumb" aria-label="Открыть фото">
+                                                                <img src="{{ attachment.preview_url }}" alt="Фото заказа">
+                                                            </a>
+                                                            <div class="order-photo-caption" title="{{ attachment.original_name }}">{{ attachment.original_name }}</div>
+                                                            <form method="post" action="{% url 'orders:delete_attachment' attachment.pk %}" class="order-photo-delete">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="next" value="{{ list_return_url }}">
+                                                                <button type="submit" class="btn btn-sm btn-danger" aria-label="Удалить фото">×</button>
+                                                            </form>
+                                                        </div>
+                                                    {% endfor %}
+                                                    {% if order.hidden_photo_count %}
+                                                        <div class="order-photo-more">+{{ order.hidden_photo_count }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                            {% if order.non_photo_attachments %}
+                                                <ul class="list-unstyled mb-0">
+                                                    {% for attachment in order.non_photo_attachments %}
+                                                        <li class="mb-1">
+                                                            <a href="{{ attachment.file.url }}" target="_blank" rel="noopener">{{ attachment.original_name }}</a>
+                                                            <span class="text-muted small">
+                                                                {{ attachment.uploaded_at|date:"d.m.Y H:i" }}
+                                                            </span>
+                                                            <form method="post" action="{% url 'orders:delete_attachment' attachment.pk %}" class="d-inline-block ms-2">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="next" value="{{ list_return_url }}">
+                                                                <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                                                            </form>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% endif %}
+                                        {% else %}
+                                            <div class="text-muted">Файлы не прикреплены</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-xl-5">
+                            <div class="bg-white border rounded-2 p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h2 class="h6 mb-0">Быстрое обновление</h2>
+                                    {% if order.is_paid %}
+                                        <span class="badge text-bg-success">Оплачено</span>
+                                    {% else %}
+                                        <span class="badge text-bg-light text-dark border">Остаток {{ order.balance|floatformat:2 }}</span>
+                                    {% endif %}
+                                </div>
+                                <form method="post" action="{% url 'orders:quick_update' order.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ list_return_url }}">
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <label class="form-label small" for="{{ order.quick_update_form.status.id_for_label }}">Статус</label>
+                                            {{ order.quick_update_form.status }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label small" for="{{ order.quick_update_form.total_amount.id_for_label }}">Сумма</label>
+                                            {{ order.quick_update_form.total_amount }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label small" for="{{ order.quick_update_form.advance_amount.id_for_label }}">Аванс</label>
+                                            {{ order.quick_update_form.advance_amount }}
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label small" for="{{ order.quick_update_form.additional_payment.id_for_label }}">Доплата</label>
+                                            {{ order.quick_update_form.additional_payment }}
+                                        </div>
+                                        <div class="col-12 d-flex justify-content-end">
+                                            <button type="submit" class="btn btn-sm btn-success">Сохранить</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="bg-white border rounded-2 p-3 mb-3">
+                                <h2 class="h6">Связанные задачи</h2>
+                                {% if order.tasks.all %}
+                                    <ul class="list-unstyled mb-0">
+                                        {% for task in order.tasks.all %}
+                                            <li class="mb-2">
+                                                <a href="{{ task.get_absolute_url }}" class="fw-semibold">{{ task.title }}</a>
+                                                <div class="small text-muted">
+                                                    {{ task.assignee.get_full_name|default:task.assignee.username }},
+                                                    срок: {{ task.due_at|date:"d.m.Y"|default:"-" }}
+                                                </div>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <div class="text-muted small">Связанных задач нет</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="bg-white border rounded-2 p-3">
+                                <dl class="row small mb-0">
+                                    <dt class="col-5">Создал</dt>
+                                    <dd class="col-7">{{ order.created_by.get_full_name|default:order.created_by.username }}</dd>
+                                    <dt class="col-5">Создан</dt>
+                                    <dd class="col-7">{{ order.created_at|date:"d.m.Y H:i" }}</dd>
+                                    <dt class="col-5">Изменён</dt>
+                                    <dd class="col-7">{{ order.updated_at|date:"d.m.Y H:i" }}</dd>
+                                    <dt class="col-5">Архив</dt>
+                                    <dd class="col-7">{{ order.archived|yesno:"Да,Нет" }}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+{% empty %}
+    <tr>
+        <td colspan="11" class="text-center text-muted py-4">Заказы не найдены</td>
+    </tr>
+{% endfor %}
+{% if infinite_next_url %}
+    <tr class="d-none" data-next-page-url="{{ infinite_next_url }}">
+        <td colspan="11"></td>
+    </tr>
+{% endif %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Архивировать клиента | CRM{% endblock %}
+
+{% block content %}
+<div class="bg-white border rounded-2 p-4">
+    <h1 class="h3">Архивировать клиента</h1>
+    <p class="mb-4">
+        Клиент <strong>{{ client }}</strong> будет скрыт из основного списка. Связанные заказы останутся в системе.
+    </p>
+    <form method="post" class="d-flex flex-wrap gap-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Архивировать</button>
+        <a href="{{ client.get_absolute_url }}" class="btn btn-outline-secondary">Отмена</a>
+    </form>
+</div>
+{% endblock %}
+
