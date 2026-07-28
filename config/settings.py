@@ -105,6 +105,8 @@ STATICFILES_DIRS = [BASE_DIR / "static", BASE_DIR / "resources"]
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+DATA_UPLOAD_MAX_NUMBER_FILES = None
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"

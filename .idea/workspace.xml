@@ -4,34 +4,24 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b97bd1af-bcfd-4c82-b07c-dbad6939541f" name="Changes" comment="Orders function">
-      <change afterPath="$PROJECT_DIR$/resources/icon.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/resources/plus.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="b97bd1af-bcfd-4c82-b07c-dbad6939541f" name="Changes" comment="Small fixes an QoL upgrades">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/clients/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/clients/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/clients/management/commands/resolve_order_clients.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/clients/management/commands/resolve_order_clients.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/clients/services/contact_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/clients/services/contact_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/clients/services/order_client_resolver.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/clients/services/order_client_resolver.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/orders/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/orders/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/orders/management/commands/import_orders_xlsx.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/management/commands/import_orders_xlsx.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/orders/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/orders/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/orders/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/orders/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/tasks/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/tasks/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/tasks/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/tasks/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/tasks/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/tasks/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/tasks/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/apps/tasks/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/crm_startup.log" beforeDir="false" afterPath="$PROJECT_DIR$/crm_startup.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/orders/_order_rows.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/orders/_order_rows.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/orders/order_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/orders/order_detail.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/orders/order_form.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/orders/order_form.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/orders/order_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/orders/order_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/tasks/task_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/tasks/task_detail.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/tasks/task_form.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/tasks/task_form.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/tasks/task_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/tasks/task_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_clients.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_clients.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_orders.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_orders.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_tasks.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_tasks.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,7 +29,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="222" />
+    <option name="cachedIndexableFilesCount" value="340" />
   </component>
   <component name="Git.Settings">
     <excluded-from-favorite>
@@ -75,61 +65,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0630122583362533" />
-      <entry key="MS500" value="3.3862916734094197" />
-      <entry key="S2" value="7.190212876601814" />
-      <entry key="S5" value="11.17215003639805" />
-      <entry key="S10" value="21.34244873302623" />
-      <entry key="S30" value="46.345984630084224" />
-      <entry key="S60" value="58.56789145280699" />
-      <entry key="M2" value="66.17351156214146" />
-      <entry key="M5" value="71.33119729884156" />
-      <entry key="M10" value="76.29966538616576" />
-      <entry key="M15" value="93.48150150060427" />
-      <entry key="M30" value="220.94308141298396" />
-      <entry key="H1" value="534.6777068015202" />
-      <entry key="H2" value="1013.0743839912885" />
-      <entry key="H4" value="1911.2847413767947" />
-      <entry key="D1" value="6665.7365520498715" />
-      <entry key="W1" value="9049.022583271215" />
+      <entry key="MS100" value="1.1774801540434912" />
+      <entry key="MS500" value="3.775502198738317" />
+      <entry key="S2" value="11.864686648377436" />
+      <entry key="S5" value="24.676040069260946" />
+      <entry key="S10" value="45.2431750009047" />
+      <entry key="S30" value="94.6768697890767" />
+      <entry key="S60" value="125.51703261509344" />
+      <entry key="M2" value="164.37308844014237" />
+      <entry key="M5" value="255.64207830610576" />
+      <entry key="M10" value="373.621676909805" />
+      <entry key="M15" value="491.13899884705825" />
+      <entry key="M30" value="828.5591819939768" />
+      <entry key="H1" value="1366.1868562904642" />
+      <entry key="H2" value="2093.395452302762" />
+      <entry key="H4" value="3171.288337172235" />
+      <entry key="D1" value="8285.329644913687" />
+      <entry key="W1" value="10933.71896958339" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
       <entry key="MS500" value="0.0" />
       <entry key="S2" value="0.0" />
-      <entry key="S5" value="6.912489153319648E-249" />
-      <entry key="S10" value="9.786898993842685E-125" />
-      <entry key="S30" value="6.874100254109666E-42" />
-      <entry key="S60" value="3.675452055434137E-21" />
-      <entry key="M2" value="8.554654480256712E-11" />
-      <entry key="M5" value="1.4231993829756783E-4" />
-      <entry key="M10" value="0.01686976220177833" />
-      <entry key="M15" value="0.08287190541153157" />
-      <entry key="M30" value="0.40711245317847505" />
-      <entry key="H1" value="0.902682217105599" />
-      <entry key="H2" value="1.3761821664013452" />
-      <entry key="H4" value="1.9881385563165743" />
-      <entry key="D1" value="4.5839232868772735" />
-      <entry key="W1" value="5.761364361293091" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="3.9776137317061093E-287" />
+      <entry key="S30" value="5.091843282751294E-96" />
+      <entry key="S60" value="3.1632997374374114E-48" />
+      <entry key="M2" value="2.5096737309808237E-24" />
+      <entry key="M5" value="5.498340907993744E-10" />
+      <entry key="M10" value="3.3158274238586575E-5" />
+      <entry key="M15" value="0.0013003570899506576" />
+      <entry key="M30" value="0.05099669603461666" />
+      <entry key="H1" value="0.3194837057901819" />
+      <entry key="H2" value="0.8187151724652434" />
+      <entry key="H4" value="1.5334693652955078" />
+      <entry key="D1" value="4.389773210053081" />
+      <entry key="W1" value="5.725854462239507" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.0099835171515148" />
-      <entry key="MS500" value="3.326236510943238" />
-      <entry key="S2" value="7.157864181539736" />
-      <entry key="S5" value="11.153654034081265" />
-      <entry key="S10" value="21.326356714474713" />
-      <entry key="S30" value="46.33486336982129" />
-      <entry key="S60" value="58.56090398179644" />
-      <entry key="M2" value="66.16957172927064" />
-      <entry key="M5" value="71.32963931884416" />
-      <entry key="M10" value="76.3154469022759" />
-      <entry key="M15" value="93.56303651759352" />
-      <entry key="M30" value="221.3478276871471" />
-      <entry key="H1" value="535.5776419170592" />
-      <entry key="H2" value="1014.4482910638338" />
-      <entry key="H4" value="1913.2711719369015" />
-      <entry key="D1" value="6670.319813941883" />
-      <entry key="W1" value="9054.78382802998" />
+      <entry key="MS100" value="1.13464976675306" />
+      <entry key="MS500" value="3.7277526802495213" />
+      <entry key="S2" value="11.826358023330863" />
+      <entry key="S5" value="24.64395775709926" />
+      <entry key="S10" value="45.21351947842829" />
+      <entry key="S30" value="94.65559535634661" />
+      <entry key="S60" value="125.50282447344277" />
+      <entry key="M2" value="164.3637645130155" />
+      <entry key="M5" value="255.63609838175904" />
+      <entry key="M10" value="373.6171933412981" />
+      <entry key="M15" value="491.13625163383267" />
+      <entry key="M30" value="828.606518010126" />
+      <entry key="H1" value="1366.502881261433" />
+      <entry key="H2" value="2094.211238447283" />
+      <entry key="H4" value="3172.819592628335" />
+      <entry key="D1" value="8289.71861739276" />
+      <entry key="W1" value="10939.44468079189" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -141,32 +131,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/Пользователь/PycharmProjects/CRM/resources",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "org.jetbrains.plugins.github.ui.GithubSettingsConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Пользователь/PycharmProjects/CRM/resources&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;org.jetbrains.plugins.github.ui.GithubSettingsConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "ChangesTree.GroupingKeys": [
-      "repository"
+  &quot;keyToStringList&quot;: {
+    &quot;ChangesTree.GroupingKeys&quot;: [
+      &quot;repository&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\Пользователь\PycharmProjects\CRM\resources" />
@@ -194,7 +184,8 @@
       <workItem from="1784284802582" duration="26718000" />
       <workItem from="1784358416777" duration="8967000" />
       <workItem from="1784640381056" duration="5612000" />
-      <workItem from="1784802014304" duration="2901000" />
+      <workItem from="1784802014304" duration="8311000" />
+      <workItem from="1785138049834" duration="3329000" />
     </task>
     <task id="LOCAL-00001" summary="initial commit">
       <option name="closed" value="true" />
@@ -220,7 +211,23 @@
       <option name="project" value="LOCAL" />
       <updated>1784304814676</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Small fixes an QoL upgrades">
+      <option name="closed" value="true" />
+      <created>1784807462973</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1784807462973</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Small fixes an QoL upgrades">
+      <option name="closed" value="true" />
+      <created>1784807469871</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1784807469871</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -229,6 +236,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="initial commit" />
     <MESSAGE value="Orders function" />
-    <option name="LAST_COMMIT_MESSAGE" value="Orders function" />
+    <MESSAGE value="Small fixes an QoL upgrades" />
+    <option name="LAST_COMMIT_MESSAGE" value="Small fixes an QoL upgrades" />
   </component>
 </project>

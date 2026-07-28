@@ -19,6 +19,7 @@ from openpyxl import Workbook
 from openpyxl.styles import PatternFill
 
 from apps.orders.models import Order, OrderAttachment, OrderStatus
+from apps.orders.services.attachment_previews import get_order_attachment_thumbnail_name
 from apps.tasks.models import Task, TaskPriority, TaskStatus
 
 
@@ -306,6 +307,26 @@ class OrderWorkflowTests(TestCase):
         self.assertEqual(attachment.uploaded_by, self.user)
         self.assertTrue(attachment.file.name.startswith(f"orders/{order.pk}/attachments/"))
 
+    def test_authenticated_user_can_attach_more_than_one_hundred_files(self) -> None:
+        self.client.force_login(self.user)
+        uploaded_files = [
+            SimpleUploadedFile(
+                f"photo-{index:03d}.txt",
+                b"content",
+                content_type="text/plain",
+            )
+            for index in range(183)
+        ]
+
+        response = self.client.post(
+            reverse("orders:create"),
+            data={**self.form_data(order_number="MANY-FILES-1"), "attachments": uploaded_files},
+        )
+
+        self.assertRedirects(response, reverse("orders:list"))
+        order = Order.objects.get(order_number="MANY-FILES-1")
+        self.assertEqual(order.attachments.count(), 183)
+
     def test_order_list_marks_orders_with_attachments(self) -> None:
         order = self.create_order(order_number="FILE-MARK-1")
         OrderAttachment.objects.create(
@@ -348,6 +369,20 @@ class OrderWorkflowTests(TestCase):
         self.assertContains(response, f'src="{preview_url}"')
         self.assertContains(response, f'href="{attachment.file.url}"')
 
+    def test_jpeg_attachment_uses_preview_endpoint(self) -> None:
+        order = self.create_order(order_number="JPG-PREVIEW-1")
+        attachment = self.attach_order_file(order, "camera-photo.jpg")
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("orders:list"))
+
+        preview_url = reverse("orders:attachment_preview", kwargs={"pk": attachment.pk})
+        self.assertTrue(attachment.is_image)
+        self.assertFalse(attachment.is_heic_image)
+        self.assertEqual(attachment.preview_url, preview_url)
+        self.assertContains(response, f'src="{preview_url}"')
+        self.assertContains(response, f'href="{attachment.file.url}"')
+
     def test_heic_preview_endpoint_returns_jpeg(self) -> None:
         from PIL import Image
         from pillow_heif import register_heif_opener
@@ -365,6 +400,48 @@ class OrderWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "image/jpeg")
         self.assertTrue(response.content.startswith(b"\xff\xd8"))
+
+    def test_regular_image_preview_endpoint_returns_compressed_thumbnail(self) -> None:
+        from PIL import Image
+
+        image = Image.new("RGB", (1400, 1000), "blue")
+        image_file = BytesIO()
+        image.save(image_file, format="JPEG", quality=95)
+        original_content = image_file.getvalue()
+        order = self.create_order(order_number="JPG-THUMB-1")
+        attachment = self.attach_order_file(order, "large-photo.jpg", original_content)
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("orders:attachment_preview", kwargs={"pk": attachment.pk}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/jpeg")
+        self.assertTrue(response.content.startswith(b"\xff\xd8"))
+        with Image.open(BytesIO(response.content)) as thumbnail:
+            self.assertLessEqual(max(thumbnail.size), 360)
+        self.assertTrue(attachment.file.storage.exists(get_order_attachment_thumbnail_name(attachment)))
+
+    def test_uploaded_image_creates_cached_preview(self) -> None:
+        from PIL import Image
+
+        self.client.force_login(self.user)
+        image = Image.new("RGB", (1200, 800), "green")
+        image_file = BytesIO()
+        image.save(image_file, format="JPEG", quality=95)
+        uploaded_file = SimpleUploadedFile(
+            "uploaded-photo.jpg",
+            image_file.getvalue(),
+            content_type="image/jpeg",
+        )
+
+        response = self.client.post(
+            reverse("orders:create"),
+            data={**self.form_data(order_number="JPG-UPLOAD-1"), "attachments": uploaded_file},
+        )
+
+        self.assertRedirects(response, reverse("orders:list"))
+        attachment = OrderAttachment.objects.get(order__order_number="JPG-UPLOAD-1")
+        self.assertTrue(attachment.file.storage.exists(get_order_attachment_thumbnail_name(attachment)))
 
     def test_order_list_shows_limited_photo_preview_and_extra_count(self) -> None:
         order = self.create_order(order_number="IMAGE-PREVIEW-1")
@@ -403,6 +480,36 @@ class OrderWorkflowTests(TestCase):
         self.assertContains(response, reverse("orders:delete_attachment", kwargs={"pk": attachment.pk}))
         self.assertContains(response, "Удалить")
 
+    def test_order_edit_form_does_not_nest_delete_form_inside_order_form(self) -> None:
+        order = self.create_order(order_number="FILE-NESTED-FORM-1")
+        attachment = self.attach_order_file(order, "wrong-photo.jpg")
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("orders:edit", kwargs={"pk": order.pk}))
+
+        content = response.content.decode()
+        order_form_start = content.index('id="order-form"')
+        order_form_end = content.index("</form>", order_form_start)
+        delete_form_position = content.index(
+            reverse("orders:delete_attachment", kwargs={"pk": attachment.pk}),
+        )
+        self.assertGreater(delete_form_position, order_form_end)
+
+    def test_order_edit_form_submission_updates_order_with_existing_attachment(self) -> None:
+        order = self.create_order(order_number="EDIT-BEFORE")
+        self.attach_order_file(order, "existing-photo.jpg")
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("orders:edit", kwargs={"pk": order.pk}),
+            data=self.form_data(order_number="EDIT-AFTER", work_information="Новая информация"),
+        )
+
+        order.refresh_from_db()
+        self.assertRedirects(response, order.get_absolute_url())
+        self.assertEqual(order.order_number, "EDIT-AFTER")
+        self.assertEqual(order.work_information, "Новая информация")
+
     def test_authenticated_user_can_delete_order_attachment(self) -> None:
         order = self.create_order(order_number="FILE-DELETE-1")
         attachment = self.attach_order_file(order, "remove-me.jpg")
@@ -418,6 +525,29 @@ class OrderWorkflowTests(TestCase):
         self.assertRedirects(response, order.get_absolute_url())
         self.assertFalse(OrderAttachment.objects.filter(pk=attachment.pk).exists())
         self.assertFalse(storage.exists(file_name))
+
+    def test_deleting_order_attachment_removes_cached_preview(self) -> None:
+        from PIL import Image
+
+        image = Image.new("RGB", (1200, 800), "red")
+        image_file = BytesIO()
+        image.save(image_file, format="JPEG", quality=95)
+        order = self.create_order(order_number="FILE-DELETE-THUMB-1")
+        attachment = self.attach_order_file(order, "remove-preview.jpg", image_file.getvalue())
+        storage = attachment.file.storage
+        thumbnail_name = get_order_attachment_thumbnail_name(attachment)
+        self.client.force_login(self.user)
+
+        self.client.get(reverse("orders:attachment_preview", kwargs={"pk": attachment.pk}))
+        self.assertTrue(storage.exists(thumbnail_name))
+
+        response = self.client.post(
+            reverse("orders:delete_attachment", kwargs={"pk": attachment.pk}),
+            data={"next": order.get_absolute_url()},
+        )
+
+        self.assertRedirects(response, order.get_absolute_url())
+        self.assertFalse(storage.exists(thumbnail_name))
 
     def test_can_download_all_order_attachments_as_zip(self) -> None:
         order = self.create_order(order_number="FILE-ZIP-1")
@@ -517,6 +647,48 @@ class OrderWorkflowTests(TestCase):
 
         self.assertContains(response, "Оплачено")
         self.assertNotContains(response, "table-success")
+
+    def test_order_list_highlights_balance_by_payment_state(self) -> None:
+        self.create_order(
+            order_number="BALANCE-DUE-1",
+            total_amount=Decimal("100.00"),
+            advance_amount=Decimal("40.00"),
+            additional_payment=Decimal("10.00"),
+        )
+        self.create_order(
+            order_number="BALANCE-PAID-1",
+            total_amount=Decimal("100.00"),
+            advance_amount=Decimal("40.00"),
+            additional_payment=Decimal("60.00"),
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("orders:list"))
+
+        self.assertContains(response, 'class="order-balance-value order-balance-due"')
+        self.assertContains(response, 'class="order-balance-value order-balance-paid"')
+        self.assertContains(response, 'class="badge text-bg-danger">Остаток 50,00</span>')
+
+    def test_order_detail_highlights_balance_by_payment_state(self) -> None:
+        due_order = self.create_order(
+            order_number="BALANCE-DUE-DETAIL-1",
+            total_amount=Decimal("100.00"),
+            advance_amount=Decimal("25.00"),
+            additional_payment=Decimal("25.00"),
+        )
+        paid_order = self.create_order(
+            order_number="BALANCE-PAID-DETAIL-1",
+            total_amount=Decimal("100.00"),
+            advance_amount=Decimal("50.00"),
+            additional_payment=Decimal("50.00"),
+        )
+        self.client.force_login(self.user)
+
+        due_response = self.client.get(due_order.get_absolute_url())
+        paid_response = self.client.get(paid_order.get_absolute_url())
+
+        self.assertContains(due_response, 'class="order-balance-value order-balance-due"')
+        self.assertContains(paid_response, 'class="order-balance-value order-balance-paid"')
 
     def test_order_statuses_have_expected_row_colors(self) -> None:
         self.create_order(order_number="WAIT-1", status=OrderStatus.WAITING_RESPONSE)

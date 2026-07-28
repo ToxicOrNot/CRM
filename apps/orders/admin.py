@@ -1,4 +1,7 @@
 from django.contrib import admin
+from django.db.models import QuerySet
+from django.http import HttpRequest
+from django.utils import timezone
 
 from apps.orders.models import Order, OrderAttachment
 
@@ -13,6 +16,7 @@ class OrderAttachmentInline(admin.TabularInline):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     inlines = (OrderAttachmentInline,)
+    actions = ("archive_selected_orders",)
     list_display = (
         "sequence_number_display",
         "order_date",
@@ -38,6 +42,11 @@ class OrderAdmin(admin.ModelAdmin):
         "balance_display",
     )
     date_hierarchy = "order_date"
+
+    @admin.action(description="Перенести выбранные заказы в архив")
+    def archive_selected_orders(self, request: HttpRequest, queryset: QuerySet[Order]) -> None:
+        updated_count = queryset.filter(archived=False).update(archived=True, updated_at=timezone.now())
+        self.message_user(request, f"Заказов перенесено в архив: {updated_count}.")
 
     fieldsets = (
         (

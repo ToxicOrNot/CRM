@@ -251,6 +251,8 @@ class OrderAttachment(models.Model):
 
     @property
     def preview_url(self) -> str:
-        if self.is_heic_image:
-            return reverse("orders:attachment_preview", kwargs={"pk": self.pk})
+        if self.is_image:
+            from apps.orders.services.attachment_previews import get_existing_thumbnail_url
+
+            return get_existing_thumbnail_url(self) or reverse("orders:attachment_preview", kwargs={"pk": self.pk})
         return self.file.url

@@ -102,6 +102,7 @@ def parse_contact_string(source_text: str) -> ParsedClientData:
             normalized = normalize_contact_value(contact_type, raw_value)
         except ValidationError as exc:
             warnings.append(f"Контакт «{raw_value}» не распознан: {'; '.join(exc.messages)}")
+            spans_to_remove.append(span)
             return
         contacts.append(
             ParsedContact(
@@ -165,4 +166,3 @@ def parse_contact_string(source_text: str) -> ParsedClientData:
         requires_confirmation=bool(warnings) or confidence < 0.9,
         source_text=source_text,
     )
-

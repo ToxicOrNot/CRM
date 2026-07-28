@@ -17,6 +17,7 @@ PHONE_BASED_TYPES = {
     ContactType.TELEGRAM,
     ContactType.MAX,
 }
+CLIENT_NAME_MATCH_LIMIT = 2
 
 
 @dataclass
@@ -40,10 +41,6 @@ def resolve_order_client(order: Order, *, user: object) -> OrderClientResolveRes
         result.warnings.append("В заказе нет контактной строки для разбора.")
         return result
 
-    if not has_client_identity(parsed):
-        result.warnings.append("Для автоматического создания клиента нужны имя и конкретный контакт.")
-        return result
-
     with transaction.atomic():
         if order.client_id:
             client = Client.objects.select_for_update().prefetch_related("contacts").get(pk=order.client_id)
@@ -57,6 +54,11 @@ def resolve_order_client(order: Order, *, user: object) -> OrderClientResolveRes
                 client = matching_clients[0]
                 result.linked_existing_client = True
             else:
+                if not can_create_client_from_order(parsed):
+                    result.warnings.append(
+                        "Для автоматического создания клиента нужны имя и телефон/TG или одновременно телефон и TG.",
+                    )
+                    return result
                 client = Client.objects.create(
                     display_name=parsed.display_name,
                     preferred_channel=parsed.preferred_channel,
@@ -67,7 +69,8 @@ def resolve_order_client(order: Order, *, user: object) -> OrderClientResolveRes
 
         result.client = client
         result.updated_client_fields = merge_client_fields(client, parsed)
-        result.created_contacts = add_missing_contacts(client, parsed)
+        if should_add_missing_contacts(client, parsed, order_already_linked=bool(order.client_id), client_was_created=result.created_client):
+            result.created_contacts = add_missing_contacts(client, parsed)
 
         order_update_fields = []
         if order.client_id != client.pk:
@@ -87,15 +90,42 @@ def has_concrete_contacts(parsed: ParsedClientData) -> bool:
 
 
 def has_client_identity(parsed: ParsedClientData) -> bool:
-    return bool(parsed.display_name and has_concrete_contacts(parsed))
+    return can_create_client_from_order(parsed)
+
+
+def can_create_client_from_order(parsed: ParsedClientData) -> bool:
+    has_name = bool(parsed.display_name)
+    has_phone = has_phone_contact(parsed)
+    has_telegram_id = has_telegram_username(parsed)
+    return (has_name and (has_phone or has_telegram_id)) or (has_phone and has_telegram_id)
+
+
+def has_phone_contact(parsed: ParsedClientData) -> bool:
+    return any(is_phone_contact(contact.contact_type, contact.normalized_value) for contact in parsed.contacts)
+
+
+def has_telegram_username(parsed: ParsedClientData) -> bool:
+    return any(
+        contact.contact_type == ContactType.TELEGRAM
+        and bool(contact.normalized_value)
+        and not contact.normalized_value.startswith("+")
+        for contact in parsed.contacts
+    )
 
 
 def find_matching_clients(parsed: ParsedClientData) -> list[Client]:
+    clients_by_contact = find_clients_by_contacts(parsed)
+    if clients_by_contact:
+        return clients_by_contact
+    return find_clients_by_display_name(parsed.display_name)
+
+
+def find_clients_by_contacts(parsed: ParsedClientData) -> list[Client]:
     query = Q()
     for contact in parsed.contacts:
         if not contact.normalized_value:
             continue
-        if contact.normalized_value.startswith("+") and contact.contact_type in PHONE_BASED_TYPES:
+        if is_phone_contact(contact.contact_type, contact.normalized_value):
             query |= Q(
                 contacts__contact_type__in=PHONE_BASED_TYPES,
                 contacts__normalized_value=contact.normalized_value,
@@ -108,6 +138,19 @@ def find_matching_clients(parsed: ParsedClientData) -> list[Client]:
     if not query:
         return []
     return list(Client.objects.filter(query).distinct().prefetch_related("contacts"))
+
+
+def find_clients_by_display_name(display_name: str) -> list[Client]:
+    display_name = " ".join((display_name or "").strip().split())
+    if not display_name:
+        return []
+    clients = []
+    for client in Client.objects.prefetch_related("contacts"):
+        if normalize_name(client.display_name) == normalize_name(display_name):
+            clients.append(client)
+            if len(clients) >= CLIENT_NAME_MATCH_LIMIT:
+                break
+    return clients
 
 
 def merge_client_fields(client: Client, parsed: ParsedClientData) -> list[str]:
@@ -145,6 +188,26 @@ def add_missing_contacts(client: Client, parsed: ParsedClientData) -> int:
     return created
 
 
+def should_add_missing_contacts(
+    client: Client,
+    parsed: ParsedClientData,
+    *,
+    order_already_linked: bool,
+    client_was_created: bool,
+) -> bool:
+    if client_was_created or order_already_linked:
+        return True
+    return parsed_has_existing_client_contact(client, parsed)
+
+
+def parsed_has_existing_client_contact(client: Client, parsed: ParsedClientData) -> bool:
+    existing_contacts = list(client.contacts.all())
+    return any(
+        contact_exists(existing_contacts, parsed_contact.contact_type, parsed_contact.normalized_value)
+        for parsed_contact in parsed.contacts
+    )
+
+
 def sync_order_contacts_from_client(order: Order, client: Client) -> bool:
     snapshot = build_order_contact_snapshot(client)
     if not snapshot or snapshot == (order.contacts or "").strip():
@@ -159,12 +222,20 @@ def contact_exists(existing_contacts: list[ClientContact], contact_type: str, no
     for contact in existing_contacts:
         if not normalized_value:
             continue
-        if normalized_value.startswith("+") and contact_type in PHONE_BASED_TYPES and contact.contact_type in PHONE_BASED_TYPES:
+        if is_phone_contact(contact_type, normalized_value) and contact.contact_type in PHONE_BASED_TYPES:
             if contact.normalized_value == normalized_value:
                 return True
         elif contact.contact_type == contact_type and contact.normalized_value == normalized_value:
             return True
     return False
+
+
+def is_phone_contact(contact_type: str, normalized_value: str) -> bool:
+    return normalized_value.startswith("+") and contact_type in PHONE_BASED_TYPES
+
+
+def normalize_name(value: str) -> str:
+    return " ".join((value or "").strip().lower().split())
 
 
 def append_line(current_value: str, new_value: str) -> str:

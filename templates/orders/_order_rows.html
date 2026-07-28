@@ -39,7 +39,11 @@
         <td class="text-end order-money-cell">{{ order.total_amount|floatformat:2 }}</td>
         <td class="text-end order-money-cell">{{ order.advance_amount|floatformat:2 }}</td>
         <td class="text-end order-money-cell">{{ order.additional_payment|floatformat:2 }}</td>
-        <td class="text-end fw-semibold order-money-cell">{{ order.balance|floatformat:2 }}</td>
+        <td class="text-end order-money-cell">
+            <span class="order-balance-value {% if order.is_paid %}order-balance-paid{% elif order.balance > 0 %}order-balance-due{% endif %}">
+                {{ order.balance|floatformat:2 }}
+            </span>
+        </td>
     </tr>
     <tr>
         <td colspan="11" class="p-0 border-0">
@@ -152,7 +156,7 @@
                                     {% if order.is_paid %}
                                         <span class="badge text-bg-success">Оплачено</span>
                                     {% else %}
-                                        <span class="badge text-bg-light text-dark border">Остаток {{ order.balance|floatformat:2 }}</span>
+                                        <span class="badge text-bg-danger">Остаток {{ order.balance|floatformat:2 }}</span>
                                     {% endif %}
                                 </div>
                                 <form method="post" action="{% url 'orders:quick_update' order.pk %}">

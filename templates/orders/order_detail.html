@@ -3,6 +3,26 @@
 {% block title %}{{ order }} | CRM{% endblock %}
 
 {% block content %}
+<style>
+    .order-balance-value {
+        display: inline-block;
+        min-width: 4.4rem;
+        padding: 0.1rem 0.35rem;
+        border-radius: 0.25rem;
+        font-weight: 700;
+    }
+
+    .order-balance-due {
+        background-color: #f8d7da;
+        color: #842029;
+    }
+
+    .order-balance-paid {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+</style>
+
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
     <div>
         <h1 class="h3 mb-1">{{ order }}</h1>
@@ -134,7 +154,11 @@
                 <dt class="col-6">Доплата</dt>
                 <dd class="col-6 text-end">{{ order.additional_payment|floatformat:2 }}</dd>
                 <dt class="col-6">Остаток</dt>
-                <dd class="col-6 text-end fw-semibold">{{ order.balance|floatformat:2 }}</dd>
+                <dd class="col-6 text-end">
+                    <span class="order-balance-value {% if order.is_paid %}order-balance-paid{% elif order.balance > 0 %}order-balance-due{% endif %}">
+                        {{ order.balance|floatformat:2 }}
+                    </span>
+                </dd>
                 <dt class="col-6">Оплата</dt>
                 <dd class="col-6 text-end">
                     {% if order.is_paid %}

@@ -23,6 +23,11 @@ from apps.clients.services.order_client_resolver import resolve_order_client
 from apps.clients.services.order_contact_snapshot import build_order_contact_snapshot
 from apps.orders.forms import OrderForm, OrderQuickUpdateForm
 from apps.orders.models import Order, OrderAttachment, OrderStatus
+from apps.orders.services.attachment_previews import (
+    AttachmentPreviewError,
+    delete_order_attachment_thumbnail,
+    get_or_create_order_attachment_thumbnail,
+)
 
 
 ORDER_SORT_FIELDS = {
@@ -68,12 +73,17 @@ def save_order_attachments(
     uploaded_by: object,
 ) -> None:
     for uploaded_file in uploaded_files:
-        OrderAttachment.objects.create(
+        attachment = OrderAttachment.objects.create(
             order=order,
             file=uploaded_file,
             original_name=uploaded_file.name,
             uploaded_by=uploaded_by,
         )
+        if attachment.is_image:
+            try:
+                get_or_create_order_attachment_thumbnail(attachment)
+            except AttachmentPreviewError:
+                pass
 
 
 def prepare_order_attachment_preview(order: Order) -> None:
@@ -85,6 +95,10 @@ def prepare_order_attachment_preview(order: Order) -> None:
     order.non_photo_attachments = [
         attachment for attachment in attachments if not attachment.is_image
     ]
+
+
+def has_visible_client_field_updates(updated_fields: list[str]) -> bool:
+    return any(field_name != "source_text" for field_name in updated_fields)
 
 
 class OrderPermissionMixin(LoginRequiredMixin):
@@ -298,8 +312,12 @@ class OrderCreateView(OrderPermissionMixin, CreateView):
                 self.request,
                 "Клиент не определён автоматически: найдено несколько возможных клиентов.",
             )
+            for warning in result.warnings:
+                messages.warning(self.request, warning)
             return
         if result.client is None:
+            for warning in result.warnings:
+                messages.warning(self.request, warning)
             return
         if result.created_client:
             messages.info(self.request, f"Создан клиент «{result.client}» из контактов заказа.")
@@ -308,7 +326,9 @@ class OrderCreateView(OrderPermissionMixin, CreateView):
         if result.created_contacts:
             messages.info(self.request, f"Добавлено контактов клиенту: {result.created_contacts}.")
         if result.updated_order_contacts:
-            messages.info(self.request, "Контакты заказа дополнены данными из карточки клиента.")
+            messages.info(self.request, "В заказ подставлены контакты из карточки клиента.")
+        for warning in result.warnings:
+            messages.warning(self.request, warning)
 
     def get_initial(self) -> dict[str, object]:
         initial = super().get_initial()
@@ -447,8 +467,8 @@ class OrderResolveClientView(OrderPermissionMixin, View):
         if result.created_contacts:
             messages.info(request, f"Добавлено контактов клиенту: {result.created_contacts}.")
         if result.updated_order_contacts:
-            messages.info(request, "Контакты заказа дополнены данными из карточки клиента.")
-        if result.updated_client_fields:
+            messages.info(request, "В заказ подставлены контакты из карточки клиента.")
+        if has_visible_client_field_updates(result.updated_client_fields):
             messages.info(request, "Карточка клиента дополнена данными из заказа.")
         for warning in result.warnings:
             messages.warning(request, warning)
@@ -512,34 +532,25 @@ class OrderAttachmentPreviewView(OrderPermissionMixin, View):
         attachment = get_object_or_404(OrderAttachment, pk=pk)
         if not attachment.file:
             return HttpResponseNotFound("Файл заказа не найден.")
-        if not attachment.is_heic_image:
+        if not attachment.is_image:
             return redirect(attachment.file.url)
         if not attachment.file.storage.exists(attachment.file.name):
             return HttpResponseNotFound("Файл заказа не найден на сервере.")
 
         try:
-            from PIL import Image, ImageOps
-            from pillow_heif import register_heif_opener
-        except ImportError:
+            thumbnail_name = get_or_create_order_attachment_thumbnail(attachment)
+        except AttachmentPreviewError:
+            if not attachment.is_heic_image:
+                return redirect(attachment.file.url)
             return HttpResponseServerError(
                 "Для предпросмотра HEIC/HEIF установите Pillow и pillow-heif.",
             )
 
-        register_heif_opener()
-        output = BytesIO()
-        try:
-            with attachment.file.open("rb") as source:
-                with Image.open(source) as image:
-                    image = ImageOps.exif_transpose(image)
-                    image.thumbnail((1600, 1600))
-                    if image.mode not in {"RGB", "L"}:
-                        image = image.convert("RGB")
-                    image.save(output, format="JPEG", quality=86, optimize=True)
-        except Exception:
-            return HttpResponseServerError("Не удалось создать предпросмотр HEIC/HEIF.")
+        with attachment.file.storage.open(thumbnail_name, "rb") as thumbnail:
+            thumbnail_content = thumbnail.read()
 
-        response = HttpResponse(output.getvalue(), content_type="image/jpeg")
-        response["Cache-Control"] = "private, max-age=3600"
+        response = HttpResponse(thumbnail_content, content_type="image/jpeg")
+        response["Cache-Control"] = "private, max-age=86400"
         return response
 
 
@@ -551,6 +562,7 @@ class OrderAttachmentDeleteView(OrderPermissionMixin, View):
         )
         order = attachment.order
         file_name = attachment.original_name
+        delete_order_attachment_thumbnail(attachment)
         if attachment.file:
             attachment.file.delete(save=False)
         attachment.delete()

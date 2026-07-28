@@ -1,4 +1,7 @@
 from django.contrib import admin
+from django.db.models import QuerySet
+from django.http import HttpRequest
+from django.utils import timezone
 
 from apps.clients.models import Client, ClientContact
 
@@ -12,6 +15,7 @@ class ClientContactInline(admin.TabularInline):
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
+    actions = ("archive_selected_clients",)
     list_display = (
         "display_name",
         "preferred_channel",
@@ -31,6 +35,11 @@ class ClientAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("created_by", "created_at", "updated_at")
     inlines = (ClientContactInline,)
+
+    @admin.action(description="Перенести выбранных клиентов в архив")
+    def archive_selected_clients(self, request: HttpRequest, queryset: QuerySet[Client]) -> None:
+        updated_count = queryset.filter(archived=False).update(archived=True, updated_at=timezone.now())
+        self.message_user(request, f"Клиентов перенесено в архив: {updated_count}.")
 
     fieldsets = (
         (
@@ -77,4 +86,3 @@ class ClientContactAdmin(admin.ModelAdmin):
     list_filter = ("contact_type", "is_primary")
     search_fields = ("client__display_name", "raw_value", "normalized_value")
     readonly_fields = ("normalized_value", "created_at", "updated_at")
-

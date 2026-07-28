@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
@@ -165,6 +166,14 @@ class ClientServiceTests(TestCase):
         self.assertEqual(parsed.preferred_channel, ContactType.MAX)
         self.assertEqual(parsed.contacts, [])
         self.assertIn("Указан канал MAX", parsed.warnings[0])
+
+    def test_parser_does_not_treat_invalid_phone_as_display_name(self) -> None:
+        parsed = parse_contact_string("@bocharevy +7-123-456-78-90")
+
+        self.assertEqual(parsed.display_name, "")
+        self.assertEqual(len(parsed.contacts), 1)
+        self.assertEqual(parsed.contacts[0].normalized_value, "bocharevy")
+        self.assertTrue(any("Телефон не является корректным номером" in warning for warning in parsed.warnings))
 
     def test_parser_does_not_write_to_database(self) -> None:
         before = Client.objects.count()
@@ -492,7 +501,7 @@ class ClientInterfaceTests(TestCase):
         self.assertIn("+7-916-080-41-11", order.contacts)
         self.assertIn("@nastya", order.contacts)
 
-    def test_new_order_with_only_phone_does_not_create_or_link_client(self) -> None:
+    def test_new_order_with_only_unique_existing_phone_links_client(self) -> None:
         client = Client.objects.create(display_name="НАСТЯ", created_by=self.user)
         ClientContact.objects.create(
             client=client,
@@ -506,10 +515,137 @@ class ClientInterfaceTests(TestCase):
             data=self.order_form_data(contacts="89160804111"),
         )
 
+        order = Order.objects.get(original_contacts="89160804111")
+        self.assertRedirects(response, reverse("orders:list"))
+        self.assertEqual(order.client, client)
+        self.assertEqual(order.contacts, "НАСТЯ\n+7-916-080-41-11")
+        self.assertEqual(Client.objects.count(), 1)
+
+    def test_new_order_with_only_phone_without_existing_client_does_not_create_client(self) -> None:
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("orders:create"),
+            data=self.order_form_data(contacts="89160804111"),
+        )
+
         order = Order.objects.get(contacts="89160804111")
         self.assertRedirects(response, reverse("orders:list"))
         self.assertIsNone(order.client)
-        self.assertEqual(Client.objects.count(), 1)
+        self.assertEqual(Client.objects.count(), 0)
+
+    def test_new_order_with_unique_existing_name_links_client(self) -> None:
+        client = Client.objects.create(display_name="Михаил", created_by=self.user)
+        ClientContact.objects.create(client=client, contact_type=ContactType.TELEGRAM, raw_value="@mikhail")
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("orders:create"),
+            data=self.order_form_data(contacts="Михаил"),
+        )
+
+        order = Order.objects.get(original_contacts="Михаил")
+        self.assertRedirects(response, reverse("orders:list"))
+        self.assertEqual(order.client, client)
+        self.assertEqual(order.contacts, "Михаил\n@mikhail")
+
+    def test_new_order_with_existing_contact_and_extra_contact_updates_client(self) -> None:
+        client = Client.objects.create(display_name="aurelia", created_by=self.user)
+        ClientContact.objects.create(client=client, contact_type=ContactType.TELEGRAM, raw_value="@aurelia_ya")
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("orders:create"),
+            data=self.order_form_data(contacts="@aurelia_ya +7 916 080-41-11"),
+        )
+
+        order = Order.objects.get(original_contacts="@aurelia_ya +7 916 080-41-11")
+        self.assertRedirects(response, reverse("orders:list"))
+        self.assertEqual(order.client, client)
+        self.assertEqual(client.contacts.count(), 2)
+        self.assertTrue(client.contacts.filter(normalized_value="aurelia_ya").exists())
+        self.assertTrue(client.contacts.filter(normalized_value="+79160804111").exists())
+        self.assertIn("@aurelia_ya", order.contacts)
+        self.assertIn("+7 916 080-41-11", order.contacts)
+
+    def test_new_order_with_existing_contact_and_invalid_extra_phone_warns_without_adding_contact(self) -> None:
+        client = Client.objects.create(display_name="bocharevy", created_by=self.user)
+        ClientContact.objects.create(client=client, contact_type=ContactType.TELEGRAM, raw_value="@bocharevy")
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("orders:create"),
+            data=self.order_form_data(contacts="@bocharevy +7-123-456-78-90"),
+        )
+
+        order = Order.objects.get(original_contacts="@bocharevy +7-123-456-78-90")
+        message_texts = [str(message) for message in get_messages(response.wsgi_request)]
+        self.assertRedirects(response, reverse("orders:list"))
+        self.assertEqual(order.client, client)
+        self.assertEqual(client.contacts.count(), 1)
+        self.assertFalse(client.contacts.filter(normalized_value="+71234567890").exists())
+        self.assertEqual(order.contacts, "bocharevy\n@bocharevy")
+        self.assertTrue(any("Телефон не является корректным номером" in message for message in message_texts))
+
+    def test_new_order_with_only_name_match_does_not_add_new_contact_to_client(self) -> None:
+        client = Client.objects.create(display_name="aurelia", created_by=self.user)
+        ClientContact.objects.create(client=client, contact_type=ContactType.TELEGRAM, raw_value="@aurelia_ya")
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("orders:create"),
+            data=self.order_form_data(contacts="aurelia +7 916 080-41-11"),
+        )
+
+        order = Order.objects.get(original_contacts="aurelia +7 916 080-41-11")
+        self.assertRedirects(response, reverse("orders:list"))
+        self.assertEqual(order.client, client)
+        self.assertEqual(client.contacts.count(), 1)
+        self.assertFalse(client.contacts.filter(normalized_value="+79160804111").exists())
+        self.assertEqual(order.contacts, "aurelia\n@aurelia_ya")
+
+    def test_new_order_with_ambiguous_name_does_not_link_client(self) -> None:
+        Client.objects.create(display_name="Михаил", created_by=self.user)
+        Client.objects.create(display_name="Михаил", created_by=self.user)
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("orders:create"),
+            data=self.order_form_data(contacts="Михаил"),
+        )
+
+        order = Order.objects.get(contacts="Михаил")
+        self.assertRedirects(response, reverse("orders:list"))
+        self.assertIsNone(order.client)
+        self.assertEqual(Client.objects.count(), 2)
+
+    def test_new_order_with_phone_and_telegram_without_name_creates_client(self) -> None:
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("orders:create"),
+            data=self.order_form_data(contacts="+7 916 080-41-11 @newclient"),
+        )
+
+        order = Order.objects.get(contacts="+7 916 080-41-11 @newclient")
+        self.assertRedirects(response, reverse("orders:list"))
+        self.assertIsNotNone(order.client)
+        self.assertEqual(order.client.contacts.count(), 2)
+        self.assertTrue(order.client.contacts.filter(normalized_value="+79160804111").exists())
+        self.assertTrue(order.client.contacts.filter(normalized_value="newclient").exists())
+
+    def test_new_order_with_only_telegram_without_existing_client_does_not_create_client(self) -> None:
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("orders:create"),
+            data=self.order_form_data(contacts="@lonelytelegram"),
+        )
+
+        order = Order.objects.get(contacts="@lonelytelegram")
+        self.assertRedirects(response, reverse("orders:list"))
+        self.assertIsNone(order.client)
+        self.assertEqual(Client.objects.count(), 0)
 
     def test_new_order_without_concrete_contact_does_not_create_client(self) -> None:
         self.client.force_login(self.user)
@@ -677,7 +813,7 @@ class ClientInterfaceTests(TestCase):
         self.assertIsNotNone(order_for_new_client.client)
         self.assertEqual(order_for_new_client.client.contacts.get().normalized_value, "erina197")
         self.assertIsNone(order_without_concrete_contact.client)
-        self.assertIsNone(order_with_only_phone.client)
+        self.assertEqual(order_with_only_phone.client, existing_client)
 
     def test_resolve_order_clients_dry_run_does_not_change_database(self) -> None:
         order = self.create_order(contacts="Erina @Erina197")

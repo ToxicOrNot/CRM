@@ -63,3 +63,53 @@
  Container crm-web-1 Starting 
  Container crm-web-1 Started 
 [23.07.2026  9:53:13,44] CRM started: http://localhost:8000/ 
+[24.07.2026  9:08:15,16] Starting CRM startup script. 
+[24.07.2026  9:08:17,59] Starting Docker Desktop. 
+[24.07.2026  9:08:29,67] Docker is ready. Running docker compose up -d. 
+ Container crm-db-1 Starting 
+ Container crm-db-1 Started 
+ Container crm-db-1 Waiting 
+ Container crm-db-1 Healthy 
+ Container crm-web-1 Starting 
+ Container crm-web-1 Started 
+[24.07.2026  9:08:37,21] CRM started: http://localhost:8000/ 
+[25.07.2026  9:52:59,15] Starting CRM startup script. 
+[25.07.2026  9:53:01,68] Starting Docker Desktop. 
+[25.07.2026  9:53:14,98] Docker is ready. Running docker compose up -d. 
+ Container crm-db-1 Starting 
+ Container crm-db-1 Started 
+ Container crm-db-1 Waiting 
+ Container crm-db-1 Healthy 
+ Container crm-web-1 Starting 
+ Container crm-web-1 Started 
+[25.07.2026  9:53:21,97] CRM started: http://localhost:8000/ 
+[26.07.2026  9:36:29,58] Starting CRM startup script. 
+[26.07.2026  9:36:32,77] Starting Docker Desktop. 
+[26.07.2026  9:36:44,21] Docker is ready. Running docker compose up -d. 
+ Container crm-db-1 Starting 
+ Container crm-db-1 Started 
+ Container crm-db-1 Waiting 
+ Container crm-db-1 Healthy 
+ Container crm-web-1 Starting 
+ Container crm-web-1 Started 
+[26.07.2026  9:36:51,13] CRM started: http://localhost:8000/ 
+[27.07.2026  9:30:53,62] Starting CRM startup script. 
+[27.07.2026  9:30:57,84] Starting Docker Desktop. 
+[27.07.2026  9:31:09,00] Docker is ready. Running docker compose up -d. 
+ Container crm-db-1 Starting 
+ Container crm-db-1 Started 
+ Container crm-db-1 Waiting 
+ Container crm-db-1 Healthy 
+ Container crm-web-1 Starting 
+ Container crm-web-1 Started 
+[27.07.2026  9:31:15,95] CRM started: http://localhost:8000/ 
+[28.07.2026  9:50:57,11] Starting CRM startup script. 
+[28.07.2026  9:51:01,67] Starting Docker Desktop. 
+[28.07.2026  9:51:13,85] Docker is ready. Running docker compose up -d. 
+ Container crm-db-1 Starting 
+ Container crm-db-1 Started 
+ Container crm-db-1 Waiting 
+ Container crm-db-1 Healthy 
+ Container crm-web-1 Starting 
+ Container crm-web-1 Started 
+[28.07.2026  9:51:21,40] CRM started: http://localhost:8000/ 

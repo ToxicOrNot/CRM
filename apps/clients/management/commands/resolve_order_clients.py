@@ -7,8 +7,8 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.clients.services.contact_parser import parse_contact_string
 from apps.clients.services.order_client_resolver import (
+    can_create_client_from_order,
     find_matching_clients,
-    has_client_identity,
     resolve_order_client,
 )
 from apps.orders.models import Order
@@ -66,20 +66,19 @@ class Command(BaseCommand):
                 continue
 
             parsed = parse_contact_string(order.contacts)
-            if not has_client_identity(parsed):
+            matching_clients = find_matching_clients(parsed)
+            can_create_client = can_create_client_from_order(parsed)
+            if not order.client_id and not matching_clients and not can_create_client:
                 stats.skipped_without_client_identity += 1
                 continue
 
             if dry_run:
-                matching_clients = find_matching_clients(parsed)
-                if order.client_id:
-                    stats.already_linked += 1
-                elif len(matching_clients) > 1:
-                    stats.ambiguous += 1
-                elif len(matching_clients) == 1:
-                    stats.would_link_existing_clients += 1
-                else:
-                    stats.would_create_clients += 1
+                self.collect_dry_run_stats(
+                    stats,
+                    order_has_client=bool(order.client_id),
+                    matching_clients_count=len(matching_clients),
+                    can_create_client=can_create_client,
+                )
                 continue
 
             result = resolve_order_client(order, user=user)
@@ -98,6 +97,25 @@ class Command(BaseCommand):
             stats.created_contacts += result.created_contacts
 
         self.print_stats(stats, dry_run=dry_run)
+
+    @staticmethod
+    def collect_dry_run_stats(
+        stats: ResolveStats,
+        *,
+        order_has_client: bool,
+        matching_clients_count: int,
+        can_create_client: bool,
+    ) -> None:
+        if order_has_client:
+            stats.already_linked += 1
+        elif matching_clients_count > 1:
+            stats.ambiguous += 1
+        elif matching_clients_count == 1:
+            stats.would_link_existing_clients += 1
+        elif can_create_client:
+            stats.would_create_clients += 1
+        else:
+            stats.skipped_without_client_identity += 1
 
     def get_created_by(self, username: str | None):
         User = get_user_model()
@@ -120,7 +138,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Просмотрено заказов: {stats.scanned}")
         self.stdout.write(f"Пропущено пустых строк: {stats.skipped_empty}")
         self.stdout.write(
-            f"Пропущено без имени и конкретного контакта: {stats.skipped_without_client_identity}"
+            f"Пропущено без уникального совпадения или данных для создания: {stats.skipped_without_client_identity}"
         )
         self.stdout.write(f"Неоднозначных совпадений: {stats.ambiguous}")
         if dry_run:

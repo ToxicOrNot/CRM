@@ -106,6 +106,24 @@
         width: 100%;
     }
 
+    .orders-table .order-balance-value {
+        display: inline-block;
+        min-width: 4.4rem;
+        padding: 0.1rem 0.35rem;
+        border-radius: 0.25rem;
+        font-weight: 700;
+    }
+
+    .orders-table .order-balance-due {
+        background-color: #f8d7da;
+        color: #842029;
+    }
+
+    .orders-table .order-balance-paid {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+
     .orders-table .order-comment-indicator,
     .orders-table .order-file-indicator {
         display: inline-grid;
@@ -311,7 +329,11 @@
                 <td class="text-end order-money-cell">{{ order.total_amount|floatformat:2 }}</td>
                 <td class="text-end order-money-cell">{{ order.advance_amount|floatformat:2 }}</td>
                 <td class="text-end order-money-cell">{{ order.additional_payment|floatformat:2 }}</td>
-                <td class="text-end fw-semibold order-money-cell">{{ order.balance|floatformat:2 }}</td>
+                <td class="text-end order-money-cell">
+                    <span class="order-balance-value {% if order.is_paid %}order-balance-paid{% elif order.balance > 0 %}order-balance-due{% endif %}">
+                        {{ order.balance|floatformat:2 }}
+                    </span>
+                </td>
             </tr>
             <tr>
                 <td colspan="11" class="p-0 border-0">
@@ -424,7 +446,7 @@
                                             {% if order.is_paid %}
                                                 <span class="badge text-bg-success">Оплачено</span>
                                             {% else %}
-                                                <span class="badge text-bg-light text-dark border">Остаток {{ order.balance|floatformat:2 }}</span>
+                                                <span class="badge text-bg-danger">Остаток {{ order.balance|floatformat:2 }}</span>
                                             {% endif %}
                                         </div>
                                         <form method="post" action="{% url 'orders:quick_update' order.pk %}">

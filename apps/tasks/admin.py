@@ -1,4 +1,7 @@
 from django.contrib import admin
+from django.db.models import QuerySet
+from django.http import HttpRequest
+from django.utils import timezone
 
 from apps.tasks.models import Task, TaskAttachment
 
@@ -13,6 +16,7 @@ class TaskAttachmentInline(admin.TabularInline):
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     inlines = (TaskAttachmentInline,)
+    actions = ("archive_selected_tasks",)
     list_display = (
         "title",
         "assignee",
@@ -30,6 +34,11 @@ class TaskAdmin(admin.ModelAdmin):
     readonly_fields = ("creator", "last_modified_by", "created_at", "updated_at", "completed_at")
     autocomplete_fields = ("assignee", "order")
     date_hierarchy = "created_at"
+
+    @admin.action(description="Перенести выбранные задачи в архив")
+    def archive_selected_tasks(self, request: HttpRequest, queryset: QuerySet[Task]) -> None:
+        updated_count = queryset.filter(archived=False).update(archived=True, updated_at=timezone.now())
+        self.message_user(request, f"Задач перенесено в архив: {updated_count}.")
 
     fieldsets = (
         (
